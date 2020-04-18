@@ -2,7 +2,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { hello } = require("../flamingo/lib");
-console.log(hello());
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -31,19 +30,13 @@ const createWindow = () => {
     mainWindow.hookWindowMessage(WM_MOUSEMOVE, () => {
       const { x: newMouseX, y: newMouseY } = screen.getCursorScreenPoint();
       const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
-      const [newWindowX, newWindowY] = [oldWindowX + xDiff, oldWindowY + yDiff];
+      const [newWindowX, newWindowY, color] = hello(xDiff, yDiff, oldWindowX, oldWindowY, width, height);
 
       mainWindow.setBounds({
         x: newWindowX,
         y: newWindowY
       });
-
-      // Begin ALM-ish logic
-      if (newWindowX + width < 1000 && newWindowY + height < 1000) {
-        mainWindow.webContents.send("color", "blue");
-      } else {
-        mainWindow.webContents.send("color", "red");
-      }
+      mainWindow.webContents.send("color", color);
     });
   });
 
