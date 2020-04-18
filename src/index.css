@@ -1,0 +1,15 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: auto;
+  max-width: 38rem;
+  padding: 2rem;
+  background-color: lightblue;
+
+}
+
+#titlebar {
+  width: 100%;
+  text-align: center;
+  background-color: grey;
+  user-select: none;
+}
