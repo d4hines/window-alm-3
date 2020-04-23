@@ -30,13 +30,13 @@ const createWindow = () => {
     mainWindow.hookWindowMessage(WM_MOUSEMOVE, () => {
       const { x: newMouseX, y: newMouseY } = screen.getCursorScreenPoint();
       const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
-      const [newWindowX, newWindowY, color] = hello(xDiff, yDiff, oldWindowX, oldWindowY, width, height);
+      const [newWindowX, newWindowY, color, js_x, js_y, js_color] = hello(xDiff, yDiff, oldWindowX, oldWindowY, width, height);
 
       mainWindow.setBounds({
-        x: newWindowX,
-        y: newWindowY
+        x: js_x,
+        y: js_y
       });
-      mainWindow.webContents.send("color", color);
+      mainWindow.webContents.send("color", js_color.toLowerCase().includes("red") ? "red" : "blue");
     });
   });
 

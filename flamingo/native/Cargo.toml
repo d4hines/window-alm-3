@@ -14,5 +14,20 @@ crate-type = ["cdylib"]
 [build-dependencies]
 neon-build = "0.4.0"
 
+[dependencies.test]
+path = "./test_ddlog"
+
+[dependencies.value]
+path = "./test_ddlog/value"
+
+[dependencies.types]
+path = "./test_ddlog/types"
+
+[dependencies.differential_datalog]
+path = "./test_ddlog/differential_datalog"
+
 [dependencies]
+serde = "1.0"
+serde_json = "1.0"
+libc = "0.2"
 neon = "0.4.0"

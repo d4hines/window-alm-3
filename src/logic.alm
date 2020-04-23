@@ -1,0 +1,38 @@
+sorts
+    rectangles :: universe
+        attributes
+            width : integers
+            height : integers
+    magic_rectangles :: rectangles
+    axes :: { x, y }
+    colors :: { red, blue }
+    move :: action
+        target : rectangles
+        diff : coordinates -> integers
+fluents
+    basic
+        total coordinates : rectangles x axes -> integers
+    defined
+        in_special_area : rectangles -> booleans
+        rectangle_color : magic_rectangles x colors -> booleans
+axioms
+    rectangle_color(Rect, red) if
+        instance(Rect, magic_rectangle),
+        in_special_area(Rect).
+
+    rectangle_color(Rect, blue) if
+        instance(Rect, magic_rectangle),
+        -in_special_area(Rect).
+
+    in_special_area(Rect) if
+        width(Rect) = W,
+        height(Rect) = H,
+        coorindates(Rect, x) = X,
+        coorindates(Rect, y) = Y,
+        X + W < 1000,
+        Y + H < 1000.
+
+    occurs(Action) causes coordinates(Target, Coord + Diff) if
+        instance(Action, move),
+        target(Action) = Target,
+        diff(Action) = Diff.
