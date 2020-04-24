@@ -3,12 +3,13 @@ sorts
         attributes
             width : integers
             height : integers
-    magic_rectangles :: rectangles
     axes :: { x, y }
-    colors :: { red, blue }
-    move :: action
+    drag :: action
         target : rectangles
         diff : coordinates -> integers
+    magic_rectangles :: rectangles
+    colors :: { red, blue }
+    
 fluents
     basic
         total coordinates : rectangles x axes -> integers
@@ -16,11 +17,11 @@ fluents
         in_special_area : rectangles -> booleans
         rectangle_color : magic_rectangles x colors -> booleans
 axioms
-    rectangle_color(Rect, red) if
+    rectangle_color(Rect, blue) if
         instance(Rect, magic_rectangle),
         in_special_area(Rect).
 
-    rectangle_color(Rect, blue) if
+    rectangle_color(Rect, red) if
         instance(Rect, magic_rectangle),
         -in_special_area(Rect).
 

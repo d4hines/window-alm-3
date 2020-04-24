@@ -1,0 +1,6 @@
+digraph {
+    0 [label=Output_MagicRectangle];
+    1 [label=Universe];
+    1 -> 0;
+    1 -> 0;
+}

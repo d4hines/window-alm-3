@@ -4,4 +4,5 @@ native/artifacts.json
 **/*~
 **/node_modules
 **/.DS_Store
-native/test_ddlog
+native/test_ddlog/.cargo
+native/test_ddlog/target
