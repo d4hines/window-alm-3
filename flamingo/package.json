@@ -11,7 +11,7 @@
   },
   "scripts": {
     "install": "electron-build-env neon build --release",
-    "logic-compile": "ddlog -i ./native/logic.dl -L $DDLOG_LIB",
-    "test": "yarn logic-compile && cd ./native/logic_ddlog && cargo build --release"
+    "build": "ddlog -i ./native/logic.dl -L $DDLOG_LIB",
+    "test": "yarn build && cd ./native/logic_ddlog && cargo build --release"
   }
 }
