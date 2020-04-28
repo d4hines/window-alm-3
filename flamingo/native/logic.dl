@@ -1,0 +1,2 @@
+input relation Foo(x: string)
+Foo("bar") :- Foo("baz").

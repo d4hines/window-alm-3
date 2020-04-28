@@ -5,7 +5,7 @@ use differential_datalog::program::RelId;
 use differential_datalog::program::Update;
 use differential_datalog::record::Record;
 use differential_datalog::DDlog;
-use test_ddlog::api::HDDlog;
+use logic_ddlog::api::HDDlog;
 use types::*;
 use value::Relations;
 use value::Value;
@@ -50,11 +50,11 @@ fn do_thing(
     };
     let update1 = Update::Insert {
         relid: Relations::Universe as RelId,
-        v: Value::__Universe(obj).into_ddvalue(),
+        v: Value::Universe(obj).into_ddvalue(),
     };
     let update2 = Update::Insert {
         relid: Relations::Universe as RelId,
-        v: Value::__Universe(action).into_ddvalue(),
+        v: Value::Universe(action).into_ddvalue(),
     };
 
     let cmds = vec![update1, update2];
@@ -74,7 +74,7 @@ fn do_thing(
     let rects = delta.get_rel(Relations::Output_MagicRectangle as RelId);
     let (rect_val, _) = rects.iter().next().expect("Nothing returned by DDLog!");
     unsafe {
-        let Value::__Output_MagicRectangle(rect) = DDValConvert::from_ddvalue_ref(rect_val);
+        let Value::Output_MagicRectangle(rect) = DDValConvert::from_ddvalue_ref(rect_val);
         return (rect.x, rect.y, rect.color.to_string());
     }
 }

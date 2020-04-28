@@ -1,15 +1,20 @@
+% Sorts are like types.
 sorts
+    $ The `::` is called specialization.
+    % Just like 
+    % `class Square extends Rectangle` in Java/Typescript
     rectangles :: universe
+        % Attributes are like readonly properties
         attributes
             width : integers
             height : integers
     axes :: { x, y }
     drag :: action
-        target : rectangles
-        diff : coordinates -> integers
+        attributes
+            target : rectangles
+            diff : axes -> integers
     magic_rectangles :: rectangles
     colors :: { red, blue }
-    
 fluents
     basic
         total coordinates : rectangles x axes -> integers
@@ -17,12 +22,16 @@ fluents
         in_special_area : rectangles -> booleans
         rectangle_color : magic_rectangles x colors -> booleans
 axioms
+    % Two kinds of aximos:
+    % State constraints, which take form
+    % p if q
+    % Reads: p implies q, or, if p is true in a given state, then q is also true in that state.
+
+    % For all magic_rectangles Rect, in_special_area(Rect) implies rectangle_color(Rect, blue).
     rectangle_color(Rect, blue) if
-        instance(Rect, magic_rectangle),
         in_special_area(Rect).
 
     rectangle_color(Rect, red) if
-        instance(Rect, magic_rectangle),
         -in_special_area(Rect).
 
     in_special_area(Rect) if
@@ -33,7 +42,8 @@ axioms
         X + W < 1000,
         Y + H < 1000.
 
-    occurs(Action) causes coordinates(Target, Coord + Diff) if
-        instance(Action, move),
+    occurs(Action) causes coordinate(Target, Axis) = Coord + Diff if
+        instance(Action, drag),
         target(Action) = Target,
-        diff(Action) = Diff.
+        coordinate(Target, Axis) = Coord,
+        diff(Action, Axis) = Diff.

@@ -1,0 +1,12 @@
+digraph G {
+  rectangles [label="rectangles\l(x,y)"]
+  window_action [label="window_action\l(target)"]
+
+  rectangles -> universe
+  monitors -> rectangles
+  windows -> rectangles
+  actions -> universe
+  window_action -> actions
+  open_window -> window_action
+  move -> window_action
+}
