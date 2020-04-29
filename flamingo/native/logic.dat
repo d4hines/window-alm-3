@@ -15,7 +15,7 @@ insert Input_Windows(1, 100, 100);
 # window causes it to initialize with X and Y coordinates.
 insert Input_Open_Window(2, 1);
 # That's all for now, so we'll commit the transaction.
-commit;
+commit dump_changes;
 
 # This will produce output like so:
 # Output_Coordinate{._1 = 1, ._2 = X{}, .ret = 0}: +1
@@ -43,11 +43,18 @@ delete Input_Open_Window(2, 1);
 insert Input_Windows(3, 100, 100);
 # Then we dispatch the Open_Window action
 insert Input_Open_Window(4, 3);
-commit;
+commit dump_changes;
 
 # This produces some more output, which we need to
 # add back into Flamingo
 start;
 insert Input_Coordinate(3, X, 0);
 insert Input_Coordinate(3, Y, 0);
-commit;
+
+# Let's also clean up that last action.
+delete Input_Open_Window(4, 3);
+commit dump_changes;
+
+# Now let's take stock of where all our windows are
+# by dumping the FinalCoordinate table
+dump Final_Coordinate;

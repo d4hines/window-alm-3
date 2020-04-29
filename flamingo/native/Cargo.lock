@@ -175,11 +175,11 @@ version = "0.1.0"
 dependencies = [
  "differential_datalog",
  "libc",
+ "logic",
  "neon",
  "neon-build",
  "serde",
  "serde_json",
- "test",
  "types",
  "value",
 ]
@@ -284,6 +284,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "logic"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "cmd_parser",
+ "ddlog_ovsdb_adapter",
+ "differential-dataflow",
+ "differential_datalog",
+ "fnv",
+ "lazy_static",
+ "libc",
+ "libtool",
+ "num",
+ "num-traits",
+ "ordered-float",
+ "rustop",
+ "serde",
+ "time",
+ "timely",
+ "twox-hash",
+ "types",
+ "value",
 ]
 
 [[package]]
@@ -719,31 +744,6 @@ dependencies = [
  "quote",
  "syn",
  "unicode-xid",
-]
-
-[[package]]
-name = "test"
-version = "0.1.0"
-dependencies = [
- "abomonation",
- "cmd_parser",
- "ddlog_ovsdb_adapter",
- "differential-dataflow",
- "differential_datalog",
- "fnv",
- "lazy_static",
- "libc",
- "libtool",
- "num",
- "num-traits",
- "ordered-float",
- "rustop",
- "serde",
- "time",
- "timely",
- "twox-hash",
- "types",
- "value",
 ]
 
 [[package]]

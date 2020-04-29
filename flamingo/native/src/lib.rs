@@ -1,127 +1,139 @@
-// DDlog imports
 #![allow(non_camel_case_types, non_snake_case)]
+// Neon imports
+use neon::prelude::*;
+
+mod domain {
+    use differential_datalog::ddval;
+    use differential_datalog::ddval::DDValConvert;
+    use differential_datalog::program::RelId;
+    use differential_datalog::program::Update;
+    use differential_datalog::record::Record;
+    use differential_datalog::DDlog;
+    use types::*;
+    use types::*;
+    use value::Relations;
+    use value::Value;
+
+    pub type Coordinate = (i64, Axes, i64);
+
+    pub struct Window {
+        pub oid: OID,
+        pub width: i64,
+        pub height: i64,
+    }
+
+    pub enum Fact {
+        Coordinate(Coordinate),
+        Window(Window),
+    }
+    impl Fact {
+        fn to_ddlog_insert(&self) -> Update<ddval::DDValue> {
+            let v = match self {
+                Fact::Coordinate((oid, axis, coord)) => {
+                    let obj = types::Input_Coordinate {
+                        _1: oid.clone(),
+                        _2: axis.clone(),
+                        ret: coord.clone(),
+                    };
+                    Value::Input_Coordinate(obj).into_ddvalue()
+                }
+                Fact::Window(win) => {
+                    let obj = types::Input_Windows {
+                        oid: win.oid.clone(),
+                        width: win.width.clone(),
+                        height: win.height.clone(),
+                    };
+                    Value::Input_Windows(obj).into_ddvalue()
+                }
+            };
+            Update::Insert {
+                relid: Relations::Universe as RelId,
+                v,
+            }
+        }
+    }
+
+    pub enum Change {
+        Insertion,
+        Deletion,
+    }
+
+    pub type FactChange = (Fact, Change);
+
+    pub enum Actions {
+        Open_Window {
+            target: OID,
+        },
+        Drag {
+            target: OID,
+            distance: i64,
+            direction: Directions,
+        },
+    }
+}
+
+// DDlog imports
 use differential_datalog::ddval::DDValConvert;
 use differential_datalog::program::RelId;
-use differential_datalog::program::Update;
 use differential_datalog::record::Record;
 use differential_datalog::DDlog;
 use logic_ddlog::api::HDDlog;
 use types::*;
 use value::Relations;
 use value::Value;
+// Struct for the DB.
+pub struct Flamingo {
+    hddlog: HDDlog,
+}
 
-// Neon imports
-use neon::prelude::*;
+impl Flamingo {
+    fn add(&self, fact: domain::Fact) -> OID {
+        return 0;
+    }
 
-fn do_thing(
-    delta_x: i64,
-    delta_y: i64,
-    old_window_x: i64,
-    old_window_y: i64,
-    width: i64,
-    height: i64,
-) -> (i64, i64, std::string::String) {
-    // Set up
-    fn cb(_rel: usize, _rec: &Record, _w: isize) {}
-    let mut hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
+    fn dispatch(&self, action: domain::Actions) {}
+}
 
-    // First Data
-    let obj = Universe {
-        oid: 1,
-        universeChild: UniverseChild::Rectangle {
-            x: old_window_x,
-            y: old_window_y,
-            width,
-            height,
-            rectangleChild: RectangleChild {
-                color: types::Color::Blue,
-            },
-        },
-    };
-    let action = Universe {
-        oid: 2,
-        universeChild: UniverseChild::Action {
-            actionChild: ActionChild::MoveAction {
-                target: 1,
-                delta_x,
-                delta_y,
-            },
-        },
-    };
-    let update1 = Update::Insert {
-        relid: Relations::Universe as RelId,
-        v: Value::Universe(obj).into_ddvalue(),
-    };
-    let update2 = Update::Insert {
-        relid: Relations::Universe as RelId,
-        v: Value::Universe(action).into_ddvalue(),
-    };
-
-    let cmds = vec![update1, update2];
-    // First Transact
-    hddlog.transaction_start().unwrap();
-    hddlog.apply_valupdates(cmds.into_iter()).unwrap();
-    let mut delta = hddlog.transaction_commit_dump_changes().unwrap();
-    // Clean up
-    hddlog.transaction_start().unwrap();
-    hddlog.clear_relation(Relations::Universe as RelId).unwrap();
-    hddlog.transaction_commit().unwrap();
-
-    // Shut down
-    hddlog.stop().unwrap();
-
-    // First Parse output
-    let rects = delta.get_rel(Relations::Output_MagicRectangle as RelId);
-    let (rect_val, _) = rects.iter().next().expect("Nothing returned by DDLog!");
-    unsafe {
-        let Value::Output_MagicRectangle(rect) = DDValConvert::from_ddvalue_ref(rect_val);
-        return (rect.x, rect.y, rect.color.to_string());
+declare_types! {
+    /// JS class wrapping Flamingo struct.
+    pub class JSFlamingo for Flamingo {
+        init(mut cx) {
+            fn cb(_rel: usize, _rec: &Record, _w: isize) {}
+            let mut hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
+            Ok(Flamingo { hddlog })
+        }
+        method add(mut cx) {
+            // Take the first argument, which must be an array
+            let js_arr_handle: Handle<JsArray> = cx.argument(0)?;
+            // Convert a JsArray to a Rust Vec
+            let obj1 = js_arr_handle.get(&mut cx, 0)
+                .unwrap().downcast::<JsString>().unwrap();
+            let obj2 = obj1.value();
+            let obj3 = obj2.as_str();
+            let fact = match obj3 {
+                "windows" => {
+                    let oid = js_arr_handle.get(&mut cx, 1)
+                        .unwrap().downcast::<JsNumber>()
+                        .unwrap().value() as i64;
+                    let width = js_arr_handle.get(&mut cx, 2)
+                        .unwrap().downcast::<JsNumber>()
+                        .unwrap().value() as i64;
+                    let height = js_arr_handle.get(&mut cx, 3)
+                        .unwrap().downcast::<JsNumber>()
+                        .unwrap().value() as i64;
+                    Ok(domain::Fact::Window(domain::Window{ oid, width, height }))
+                }
+                _ => Err("Invalid add")
+            };
+            let this = cx.this();
+            let guard = cx.lock();
+            let result = this.borrow(&guard).add(fact.unwrap());
+            Ok(cx.undefined().upcast())
+        }
     }
 }
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsArray> {
-    let x_diff = cx.argument::<JsNumber>(0)?.value();
-    let y_diff = cx.argument::<JsNumber>(1)?.value();
-
-    let old_window_x = cx.argument::<JsNumber>(2)?.value();
-    let old_window_y = cx.argument::<JsNumber>(3)?.value();
-
-    let width = cx.argument::<JsNumber>(4)?.value();
-    let height = cx.argument::<JsNumber>(5)?.value();
-
-    let new_window_x = old_window_x + x_diff;
-    let new_window_y = old_window_y + y_diff;
-
-    let color = if new_window_x + width < 1000.0 && new_window_y + height < 1000.0 {
-        cx.string("blue")
-    } else {
-        cx.string("red")
-    };
-
-    let new_window_x_js = cx.number(new_window_x);
-    let new_window_y_js = cx.number(new_window_y);
-    let (foo_x, foo_y, foo_color) = do_thing(
-        x_diff as i64,
-        y_diff as i64,
-        old_window_x as i64,
-        old_window_y as i64,
-        width as i64,
-        height as i64,
-    );
-
-    let js_x = cx.number(foo_x as f64);
-    let js_y = cx.number(foo_y as f64);
-    let js_color = cx.string(foo_color);
-
-    let return_val = JsArray::new(&mut cx, 6 as u32);
-    return_val.set(&mut cx, 0 as u32, new_window_x_js).unwrap();
-    return_val.set(&mut cx, 1 as u32, new_window_y_js).unwrap();
-    return_val.set(&mut cx, 2 as u32, color).unwrap();
-    return_val.set(&mut cx, 3 as u32, js_x).unwrap();
-    return_val.set(&mut cx, 4 as u32, js_y).unwrap();
-    return_val.set(&mut cx, 5 as u32, js_color).unwrap();
-    
-    return Ok(return_val);
-}
-
-register_module!(mut cx, { cx.export_function("hello", hello) });
+register_module!(mut cx, {
+    cx.export_class::<JSFlamingo>("Flamingo")?;
+    Ok(())
+});
