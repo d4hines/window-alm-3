@@ -94,6 +94,8 @@ typedef Windows = Windows {
 
 // Terminal Sort Constructors
 input relation Input_Open_Window(oid: OID, target: OID)
+primary key (u) u.oid
+
 Universe(
         .oid = oid,
         .sort = T_Open_Window,
@@ -112,6 +114,7 @@ Universe(
     ) :- Input_Open_Window(oid, target).
 
 input relation Input_Drag(oid: OID, target: OID, distance: s64, direction: Directions)
+primary key (u) u.oid
 Universe(
         .oid = oid,
         .sort = T_Drag,
@@ -133,6 +136,7 @@ Universe(
     ) :- Input_Drag(oid, target, distance, direction).
 
 input relation Input_Monitors(oid: OID, width: s64, height: s64)
+primary key (u) u.oid
 Universe(
     .oid = oid,
     .sort = T_Monitors,
@@ -148,6 +152,7 @@ Universe(
 ) :- Input_Monitors(oid, width, height).
 
 input relation Input_Windows(oid: OID, width: s64, height: s64)
+primary key (u) u.oid
 Universe(
     .oid = oid,
     .sort = T_Windows,

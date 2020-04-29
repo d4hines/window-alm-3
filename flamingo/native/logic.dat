@@ -1,2 +1,53 @@
+##### Opening our First Window #####
+# We want to open a window, which is an action,
+# but we before we can perform an action on an object,
+# we have to add that object to Flamingo's domain.
+# Once added, that object will stay their until explicitly
+# deleted (i.e, when a window is destroyed).
+
+# DDLog allows for groups of records to be transacted
+# simultaneously, we'll group the addition of window
+# and the action that opens the window in a single transaction.
 start;
-insert Universe(1, T_Windows, C_)
+insert Input_Windows(1, 100, 100);
+
+# Now we'll dispatch our action. "Opening" the
+# window causes it to initialize with X and Y coordinates.
+insert Input_Open_Window(2, 1);
+# That's all for now, so we'll commit the transaction.
+commit;
+
+# This will produce output like so:
+# Output_Coordinate{._1 = 1, ._2 = X{}, .ret = 0}: +1
+# Output_Coordinate{._1 = 1, ._2 = Y{}, .ret = 0}: +1
+#
+# Anything starting with the prefix `Output` is signaling: 
+# "Hey, add me to the next state as Input".
+# This is how basic fluents gain the property of inertia: the
+# solver signals when to add and remove each basic fluent fact.
+# We'll add the appropriate fact like so:
+start;
+insert Input_Coordinate(1, X, 0);
+insert Input_Coordinate(1, Y, 0);
+
+# We also need to remove the previous action fact, since that's
+# no longer happening in this state.
+delete Input_Open_Window(2, 1);
+
+# If we stopped here and committed, we'd be "at rest" in the next state.
+# But we already have an action lined up in the queue, so we'll dispatch
+# that one too while we're here.
+# Our next action happens to be opening another window. 
+#
+# Like before, we first add the window to the domain
+insert Input_Windows(3, 100, 100);
+# Then we dispatch the Open_Window action
+insert Input_Open_Window(4, 3);
+commit;
+
+# This produces some more output, which we need to
+# add back into Flamingo
+start;
+insert Input_Coordinate(3, X, 0);
+insert Input_Coordinate(3, Y, 0);
+commit;
