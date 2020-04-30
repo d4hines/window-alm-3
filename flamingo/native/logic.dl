@@ -51,10 +51,9 @@ typedef Node = Universe
     | Move
 
 typedef AttributeValue = Attr_Width{width: s64}
-    | Attr_Height{height: s64} 
-    | Attr_Target{target: OID}
-    | Attr_Distance{distance: s64}
-    | Attr_Direction{direction: Directions}
+    | Attr_Height{height_1: s64} 
+    | Attr_Target{target_1: OID}
+    | Attr_Magnitude{magnitude_1: Axes, magnitude_ret: s64}
 
 // Encode Hiearchy facts
 Link(Window_Action, Actions).
@@ -69,8 +68,6 @@ relation Opposite_Direction(_1: Directions, ret: Directions)
 relation Opposite_Axis(_1: Axes, ret: Axes)
 relation Axis(_1: Directions, ret: Axes)
 relation Direction_Factor(_1: Directions, ret: s64)
-relation Snapping_Threshold(ret: s64)
-relation Corner_Snapping_Threshold(ret: s64)
 
 /////// Fluents //////////////////
 // Basic
@@ -89,6 +86,7 @@ output relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 output relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 output relation Not_Snapped(_1: OID, _2: OID)
 output relation Snapped(_1: OID, _2: OID)
+output relation Not_Snapped_To_Corner(_1: OID, _2: OID)
 output relation Snapped_To_Corner(_1: OID, _2: OID)
 output relation Stationary(_1: OID)
 output relation Predistance(_1: OID, _2: OID, _3: s64, _4: Directions)
@@ -100,8 +98,12 @@ output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 ///////////// Axioms ///////////////
-Snapping_Threshold(20).
-Corner_Snapping_Threshold(20).
+function static_Corner_Snapping_Threshold(): s64 {
+    20
+}
+function static_Snapping_Threshold(): s64 {
+    20
+}
 
 Opposite_Direction(DLeft, DRight).
 Opposite_Direction(DTop, DBottom).
@@ -240,12 +242,9 @@ Nearest_Side(a, b, dir) :-
 OutFluent(Param_Coordinate{window, axis}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Attribute(action, Attr_Target{window}),
-    Attribute(action, Attr_Distance{d}),
-    Attribute(action, Attr_Direction{dir}),
-    Axis(dir, axis),
-    Direction_Factor(dir, f),
+    Attribute(action, Attr_Magnitude{axis, m}),
     InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-    var new_coord = coord + (d * f).
+    var new_coord = coord + m.
 
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
     Instance(action, Move),
@@ -268,6 +267,18 @@ Snapped(a, b) :-
     Attracts(a, b, dir),
     not Not_Snapped(a, b).
 
+Not_Snapped_To_Corner(3, 1) :-
+    Snapped(3, 1),
+    Nearest_Side(3, 1, dir),
+    Axis(dir, ax),
+    Opposite_Axis(ax, ax__prime),
+    Nearest_Corner(3, 1, dir, dir__prime),
+    Side(3, dir__prime, side_a),
+    Side(1, dir__prime, side_b),
+    abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
+    Opposite_Direction(dir__prime, opposite_dir),
+    Nearest_Corner(3, 1, opposite_dir, _).
+
 Snapped_To_Corner(a, b) :-
     Snapped(a, b),
     Nearest_Side(a, b, dir),
@@ -276,17 +287,18 @@ Snapped_To_Corner(a, b) :-
     Nearest_Corner(a, b, dir, dir__prime),
     Side(a, dir__prime, side_a),
     Side(b, dir__prime, side_b),
-    abs(side_a - side_b) < (20 as s64).
+    abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
+    not Not_Snapped_To_Corner(a, b).
 
-Final_Coordinate(a, ax, new_coord) :-
-   Snapped(a, b),
-   Distance(a, b, d),
-   Nearest_Side(a, b, dir),
-   Axis(dir, ax),
-   InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
-   Direction_Factor(dir, f),
-   var new_coord = coord + d * f.
-   
+ Final_Coordinate(a, ax, new_coord) :-
+    Snapped(a, b),
+    Distance(a, b, d),
+    Nearest_Side(a, b, dir),
+    Axis(dir, ax),
+    InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
+    Direction_Factor(dir, f),
+    var new_coord = coord + d * f.
+
 Final_Coordinate(a, ax__prime, new_coord) :-
    Snapped(a, b),
    Snapped_To_Corner(a, b),
@@ -307,7 +319,7 @@ Final_Coordinate(a, ax__prime, coord) :-
     Opposite_Axis(ax, ax__prime),
     InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
 
-Not_Final_Coordinate(window, axis, coord) :-
+ Not_Final_Coordinate(window, axis, coord) :-
     InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
     Snapped(window, other).
 
@@ -317,7 +329,7 @@ Final_Coordinate(window, axis, coord) :-
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
-    d < (20 as s64),
+    d < static_Snapping_Threshold(),
     Closest(a, b),
     Nearest_Side(b, a, dir).
 

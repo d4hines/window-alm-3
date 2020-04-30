@@ -13,9 +13,8 @@ module Window_demo
                 Target : Windows
         Open_Window :: Window_Action
         Move :: Window_Action
-           attributes
-                Distance : Integers
-                Direction : Directions
+            attributes
+                Magnitude : Axis -> Integers
     statics
         Opposite_Direction : Directions -> Directions.
         Opposite_Axis : Axes -> Axes
@@ -45,8 +44,8 @@ module Window_demo
             Nearest_Side : Windows x Rectangles x Directions -> Booleans
             Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
     axioms
-        Snapping_Threshold() = 20
-        Corner_Snapping_Threshold() = 20.
+        Snapping_Threshold = 20
+        Corner_Snapping_Threshold = 20.
 
         Opposite_Direction(DLeft) = DRight.
         Opposite_Direction(DTop) = DBottom.
@@ -184,12 +183,9 @@ module Window_demo
         occurs(action) causes Coordinate(window, axis, new_coord) if
             Instance(action, Move),
             Target(action) = window,
-            Distance(action) = d,
-            Direction(action) = dir,
-            Axis(dir) = axis,
-            Direction_Factor(dir) = f,
+            Magnitude(action, axis) = m,
             Coordinate(window, axis) = coord,
-            new_coord = coord + (d * f).
+            new_coord = coord + m.
             
         occurs(action) causes Moving(window) = true if
             Instance(action, Move),
