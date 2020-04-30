@@ -116,7 +116,7 @@ delete Object(4, Move);
 delete Attribute(4, Attr_Target{3});
 delete Attribute(4, Attr_Magnitude{X, 200});
 commit;# dump_changes;
-dump Final_Coordinate;
+
 # We came here for snapping, so let's snap! Windows will snap when they are moved
 # close enough together that the distance between them is lower than the snapping
 # threshold (20 px), so moving window 3 left 90 pixels should do the trick.
@@ -124,7 +124,7 @@ dump Final_Coordinate;
 start;
 insert Object(5, Move);
 insert Attribute(5, Attr_Target{3});
-insert Attribute(5, Attr_Magnitude{X, 90});
+insert Attribute(5, Attr_Magnitude{X, -90});
 commit; #dump_changes;
 
 # Actions can have direct and indirect effects. The effect of moving on
@@ -138,7 +138,8 @@ insert_or_update InFluent(Param_Moving{3}, Value_Moving{true});
 delete Object(5, Move);
 delete Attribute(5, Attr_Target{3});
 delete Attribute(5, Attr_Magnitude{X, 90});
-commit dump_changes;
+commit;
 
+dump Final_Coordinate;
 # You should see that window 3's coordinates are (100, 0),
 # which is exactly what they should be!

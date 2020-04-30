@@ -134,8 +134,8 @@ Side(rectangle, DRight, r_value) :-
     var r_value = l_value + w.
 
 Side(rectangle, DBottom, b_value) :-
-    Side(rectangle, DLeft, t_value),
-    Attribute(rectangle, Attr_Width{h}),
+    Side(rectangle, DTop, t_value),
+    Attribute(rectangle, Attr_Height{h}),
     var b_value = t_value + h.
 
 On_Same_Line(a, b, axis) :-
