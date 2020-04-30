@@ -1,6 +1,3 @@
-#const corner_snapping_threshold = 20.
-#const snapping_threshold = 20.
-
 module Window_demo
     sorts
         Axes :: { X, Y }
@@ -24,6 +21,8 @@ module Window_demo
         Opposite_Axis : Axes -> Axes
         Axis : Direction -> Axes
         Direction_Factor : Directions -> Integers
+        Snapping_Threshold : Integers
+        Corner_Snapping_Threshold : Integers
     fluents
         basic
             total Coordinate : Rectangles x Axes -> Integers
@@ -34,7 +33,7 @@ module Window_demo
             Overlaps : Rectangles x Rectangles -> Booleans
             Attracts : Rectangles x Rectangles x Directions -> Booleans
             Not_Final_Coordinate : Windows x Axes x Integers -> Booleans
-            Final_Coordinate : Windows x Axes x Integers -> Booleans
+            output Final_Coordinate : Windows x Axes x Integers -> Booleans
             Not_Snapped : Windows x Rectangles -> Booleans
             Snapped : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
@@ -46,6 +45,9 @@ module Window_demo
             Nearest_Side : Windows x Rectangles x Directions -> Booleans
             Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
     axioms
+        Snapping_Threshold() = 20
+        Corner_Snapping_Threshold() = 20.
+
         Opposite_Direction(DLeft) = DRight.
         Opposite_Direction(DTop) = DBottom.
         Opposite_Direction(a) = b if
@@ -210,7 +212,7 @@ module Window_demo
             Nearest_Corner(a, b, dir, dir'),
             Side(a, dir') = side_a,
             Side(b, dir') = side_b,
-            |side_a - side_b| < corner_snapping_threshold.
+            |side_a - side_b| < Corner_Snapping_Threshold().
     
         Final_Coordinate(a, ax, new_coord) if
            Snapped(a, b),
@@ -252,7 +254,7 @@ module Window_demo
         
         Attracts(a, b, dir) if
             Distance(a, b) = d,
-            d < snapping_threshold,
+            d < Snapping_Threshold(),
             Closest(a, b),
             Nearest_Side(b, a, dir).
         

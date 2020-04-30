@@ -1,15 +1,41 @@
+/////////// Static part of Lib ////////////////
+///////////////////////////////////////////////
 // Built-in functions
 function abs(n: s64): s64 {
    if (n > 0) n else n * -1
 }
 
-////////// Sort Hiearchy ///////////////////
-// Sort Literals
-typedef Axes = X | Y
-typedef Directions = DLeft | DRight | DTop | DBottom
+input relation Object(oid: OID, sort: Node)
+primary key (x) x.oid
 
 // Built-in Object ID type
 typedef OID = s64
+
+// Links together nodes in the sort hiearchy
+output relation Link(_1: Node, _2: Node)
+Link(Actions, Universe).
+
+relation Is_A(_1: OID, _2: Node)
+Is_A(obj, sort) :- Object(obj, sort).
+
+relation Instance(_1: OID, _2: Node)
+Instance(obj, sort) :- Is_A(obj, sort).
+Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
+
+input relation Attribute(oid: OID, val: AttributeValue)
+primary key (x) x.oid
+
+input relation InFluent(value: FluentValue)
+primary key (x) fluent_primary_key(x.value)
+
+output relation OutFluent(value: FluentValue)
+
+//////////// Dynamic Part of Lib ///////////////////
+////////////////////////////////////////////////////
+
+// Sort Literals
+typedef Axes = X | Y
+typedef Directions = DLeft | DRight | DTop | DBottom
 
 // Nodes of the hierarchy
 typedef Node = Universe
@@ -21,22 +47,13 @@ typedef Node = Universe
     | Open_Window
     | Move
 
-// Sorts and attributes
-input relation Object(oid: OID, sort: Node)
-primary key (x) x.oid
-
 typedef AttributeValue = Attr_Width{width: s64}
     | Attr_Height{height: s64} 
     | Attr_Target{target: OID}
     | Attr_Distance{distance: s64}
     | Attr_Direction{direction: Directions}
 
-input relation Attribute(oid: OID, val: AttributeValue)
-primary key (x) x.oid
-
 // Encode Hiearchy facts
-output relation Link(_1: Node, _2: Node)
-Link(Actions, Universe).
 Link(Window_Action, Actions).
 Link(Open_Window, Window_Action).
 Link(Move, Window_Action).
@@ -44,26 +61,17 @@ Link(Rectangles, Universe).
 Link(Monitors, Rectangles).
 Link(Windows, Rectangles).
 
-relation Is_A(_1: OID, _2: Node)
-Is_A(obj, sort) :- Object(obj, sort).
-
-relation Instance(_1: OID, _2: Node)
-Instance(obj, sort) :- Is_A(obj, sort).
-Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
-
 // Statics
 relation Opposite_Direction(_1: Directions, ret: Directions)
 relation Opposite_Axis(_1: Axes, ret: Axes)
 relation Axis(_1: Directions, ret: Axes)
 relation Direction_Factor(_1: Directions, ret: s64)
-
+relation Snapping_Threshold(ret: s64)
+relation Corner_Snapping_Threshold(ret: s64)
 /////// Fluents //////////////////
 // Basic
 typedef FluentValue = Coordinate{coordinate_1: OID, coordinate_2: Axes, coordinate_ret: s64 }
     | Moving{moving_1: OID}
-
-input relation InFluent(value: FluentValue)
-primary key (x) fluent_primary_key(x.value)
 
 function fluent_primary_key(x: FluentValue): OID {
     match(x) {
@@ -71,8 +79,6 @@ function fluent_primary_key(x: FluentValue): OID {
         Moving{.moving_1 = y} -> y
     }
 }
-
-output relation OutFluent(value: FluentValue)
 
 // Defined
 relation Side(_1: OID, _2: Directions, _3: s64)
@@ -94,6 +100,9 @@ relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 ///////////// Axioms ///////////////
+Snapping_Threshold(20).
+Corner_Snapping_Threshold(20).
+
 Opposite_Direction(DLeft, DRight).
 Opposite_Direction(DTop, DBottom).
 Opposite_Direction(a, b) :-
