@@ -144,6 +144,6 @@ delete Attribute(5, Attr_Direction{DRight});
 delete Attribute(5, Attr_Distance{200});
 commit; #dump_changes;
 
-dump Attracts;
 dump Final_Coordinate;
-dump Distance;
+dump Snapped;
+dump Not_Snapped;

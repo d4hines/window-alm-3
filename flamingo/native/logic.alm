@@ -203,7 +203,7 @@ module Window_demo
 
         Not_Snapped(a, b) if
             Moving(a) = true,
-            Attracts(a, b, dir),
+            Attracts(b, a, dir),
             Attracts(c, a, dir'),
             dir' != dir.
             

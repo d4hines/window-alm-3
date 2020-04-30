@@ -19,12 +19,12 @@ primary key (x) x.oid
 output relation Link(_1: Node, _2: Node)
 Link(Actions, Universe).
 
-relation Is_A(_1: OID, _2: Node)
+output relation Is_A(_1: OID, _2: Node)
 Is_A(obj, sort) :- Object(obj, sort).
 
 output relation Instance(_1: OID, _2: Node)
 Instance(obj, sort) :- Is_A(obj, sort).
-Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
+Instance(obj, sort1) :- Instance(obj, sort2), Link(sort2, sort1).
 
 input relation Attribute(oid: OID, val: AttributeValue)
 
@@ -259,7 +259,7 @@ OutFluent(Param_Moving{other}, Value_Moving{false}) :-
 
 Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
-    Attracts(a, b, dir),
+    Attracts(b, a, dir),
     Attracts(c, a, dir__prime),
     dir__prime != dir.
     
