@@ -26,19 +26,18 @@ module Window_demo
         Direction_Factor : Directions -> Integers
     fluents
         basic
-            total Coordinate : Rectangles x axes -> Integers
+            total Coordinate : Rectangles x Axes -> Integers
+            Moving : Windows
         defined
             Side : Rectangles x Directions x Integers -> Booleans.
-            On_Same_Line : Rectangles x Rectangles x axes -> Booleans
+            On_Same_Line : Rectangles x Rectangles x Axes -> Booleans
             Overlaps : Rectangles x Rectangles -> Booleans
             Attracts : Rectangles x Rectangles x Directions -> Booleans
-            Not_Final_Coordinate : Windows x axes x Integers -> Booleans
-            Final_Coordinate : Windows x axes x Integers -> Booleans
+            Not_Final_Coordinate : Windows x Axes x Integers -> Booleans
+            Final_Coordinate : Windows x Axes x Integers -> Booleans
             Not_Snapped : Windows x Rectangles -> Booleans
             Snapped : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
-            Moving : Windows -> Booleans
-            Stationary : Windows -> Booleans
             PreDistance : Windows x Rectanglest x Integers -> Booleans
             Not_Distance : Windows x Rectangles x Integers -> Booleans
             Distance : Windows x Rectangles x Integers -> Booleans
@@ -72,7 +71,7 @@ module Window_demo
         Side(rectangle, DRight, r_value) if
             Side(rectangle, DLeft, l_value),
             Width(rectangle) = w,
-            var r_value = l_value + w.
+            r_value = l_value + w.
 
         Side(rectangle, DBottom, b_value) if
             Side(rectangle, DTop, t_value),
@@ -183,10 +182,10 @@ module Window_demo
             Target(action) = window,
             Distance(action) = d,
             Direction(action) = dir,
-            var axis = Axis(dir),
+            Axis(dir) = axis,
             Direction_Factor(dir) = f,
             Coordinate(window, axis) = coord,
-            var new_coord = coord + (d * f).
+            new_coord = coord + (d * f).
             
         occurs(action) causes Moving(window) if
             Instance(action, Move),
@@ -251,10 +250,11 @@ module Window_demo
             Coordinate(window, axis) = coord,
             -Not_Final_Coordinate(window, axis, coord).
         
-        Attracts(a, b, d) if
-            Distance(a, b) > snapping_threshold,
+        Attracts(a, b, dir) if
+            Distance(a, b) = d,
+            d < snapping_threshold,
             Closest(a, b),
-            Nearest_Side(b, a, d).
+            Nearest_Side(b, a, dir).
         
         Nearest_Side(a, b, dir) if
             Instance(a, windows),
@@ -271,7 +271,7 @@ module Window_demo
             Side(w, dir, edge_w),
             Side(m, dir, edge_m),
             Distance(w, m) = d,
-            edge_w - edge_m = d.
+            edge_w - edge_m == d.
                
         Nearest_Side(a, b, dir) if
             Opposite_Direction(dir) = dir',

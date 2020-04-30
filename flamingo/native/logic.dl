@@ -3,143 +3,128 @@ function abs(n: s64): s64 {
    if (n > 0) n else n * -1
 }
 
-// Constant Functions
-function corner_snapping_threshold(): s64 {
-    20
-}
-
-function snapping_threshold(): s64 {
-    20
-}
-
-// Built-in Object ID type
-typedef OID = s64
-
-
 ////////// Sort Hiearchy ///////////////////
 // Sort Literals
 typedef Axes = X | Y
 typedef Directions = DLeft | DRight | DTop | DBottom
+
+// Built-in Object ID type
+typedef OID = s64
+
 // Nodes of the hierarchy
-typedef Node = string
+typedef Node = Universe
+    | Actions
+    | Rectangles
+    | Monitors
+    | Windows
+    | Window_Action
+    | Open_Window
+    | Move
 
 // Sorts and attributes
 input relation Object(oid: OID, sort: Node)
-typedef AttributeValue = Width(width: s64)
-    | Height(height: s64)
-    | Target(target: OID)
-    | Distance(distance: s64)
-    | Direction()
+primary key (x) x.oid
 
-input relation Attribute(oid: OID, )
+typedef AttributeValue = Attr_Width{width: s64}
+    | Attr_Height{height: s64} 
+    | Attr_Target{target: OID}
+    | Attr_Distance{distance: s64}
+    | Attr_Direction{direction: Directions}
 
-relation Width(oid: OID, val: s64)
-relation Height(oid: OID, val: s64)
-relation Target(oid: OID, val: OID)
-relation Distance(oid: OID, val: s64)
-relation Direction(oid: OID, val: string)
-
-input relation Fluent(id: s64, type: string, value: string)
-relation Coordinate()
-Coordinate() :- Fluent()
-
-output relation Output_Fluent(id: s64, type:string, value: string)
+input relation Attribute(oid: OID, val: AttributeValue)
+primary key (x) x.oid
 
 // Encode Hiearchy facts
 output relation Link(_1: Node, _2: Node)
-Link("Actions", "Universe").
-Link("Window_Action", "Actions").
-Link("Open_Window", "Window_Action").
-Link("Drag", "Window_Action").
-Link("Rectangles", "Universe").
-Link("Monitors", "Rectangles").
-Link("Windows", "Rectangles").
+Link(Actions, Universe).
+Link(Window_Action, Actions).
+Link(Open_Window, Window_Action).
+Link(Move, Window_Action).
+Link(Rectangles, Universe).
+Link(Monitors, Rectangles).
+Link(Windows, Rectangles).
 
-output relation Is_A(_1: OID, _2: Node)
+relation Is_A(_1: OID, _2: Node)
 Is_A(obj, sort) :- Object(obj, sort).
 
-output relation Instance(_1: OID, _2: Node)
-Instance(obj, sort) :- Is_A(obj, node).
+relation Instance(_1: OID, _2: Node)
+Instance(obj, sort) :- Is_A(obj, sort).
 Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
 
 // Statics
-output relation Opposite_Direction(_1: string, ret: string)
-output relation Opposite_Axis(_1: string, ret: string)
-output relation Axis(_1: string, ret: string)
-output relation Direction_Factor(_1: string, ret: s64)
+relation Opposite_Direction(_1: Directions, ret: Directions)
+relation Opposite_Axis(_1: Axes, ret: Axes)
+relation Axis(_1: Directions, ret: Axes)
+relation Direction_Factor(_1: Directions, ret: s64)
 
 /////// Fluents //////////////////
 // Basic
-input relation Input_Coordinate(_1: OID, _2: string, ret: s64)
-output relation Coordinate(_1: OID, _2: string, ret: s64)
-Coordinate(x1, x2, x3) :- Input_Coordinate(x1, x2, x3).
+typedef FluentValue = Coordinate{coordinate_1: OID, coordinate_2: Axes, coordinate_ret: s64 }
+    | Moving{moving_1: OID}
+
+input relation InFluent(value: FluentValue)
+primary key (x) fluent_primary_key(x.value)
+
+function fluent_primary_key(x: FluentValue): OID {
+    match(x) {
+        Coordinate{.coordinate_1 = y} -> y,
+        Moving{.moving_1 = y} -> y
+    }
+}
+
+output relation OutFluent(value: FluentValue)
 
 // Defined
-output relation Side(_1: OID, _2: string, _3: s64)
-output relation On_Same_Line(_1: OID, _2: OID, _3: string)
-output relation Overlaps(_1: OID, _2: OID)
-output relation Attracts(_1: OID, _2: OID, _3: string)
-output relation Not_Final_Coordinate(_1: OID, _2: string, _3: s64)
-output relation Final_Coordinate(_1: OID, _2: string, _3: s64)
-output relation Not_Snapped(_1: OID, _2: OID)
-output relation Snapped(_1: OID, _2: OID)
-output relation Snapped_To_Corner(_1: OID, _2: OID)
-output relation Moving(_1: OID)
-output relation Stationary(_1: OID)
-output relation Predistance(_1: OID, _2: OID, _3: s64)
-output relation Not_Distance(_1: OID, _2: OID, _3: s64)
-output relation Distance(_1: OID, _2: OID, _3: s64)
-output relation Not_Closest(_1: OID, _2: OID)
-output relation Closest(_1: OID, _2: OID)
-output relation Nearest_Side(_1: OID, _2: OID, _3: string)
-output relation Nearest_Corner(_1: OID, _2: OID, _3: string, _4: string)
-
-// Causal Law Outputs
-output relation Output_Coordinate(_1: OID, _2: string, ret: s64)
-
-output relation Output_Moving(_1: OID)
-input relation Input_Moving(_1: OID)
-Moving(x1) :-Input_Moving(x1).
+relation Side(_1: OID, _2: Directions, _3: s64)
+relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
+relation Overlaps(_1: OID, _2: OID)
+relation Attracts(_1: OID, _2: OID, _3: Directions)
+relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+output relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+relation Not_Snapped(_1: OID, _2: OID)
+relation Snapped(_1: OID, _2: OID)
+relation Snapped_To_Corner(_1: OID, _2: OID)
+relation Stationary(_1: OID)
+relation Predistance(_1: OID, _2: OID, _3: s64)
+relation Not_Distance(_1: OID, _2: OID, _3: s64)
+relation Distance(_1: OID, _2: OID, _3: s64)
+relation Not_Closest(_1: OID, _2: OID)
+relation Closest(_1: OID, _2: OID)
+relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
+relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 ///////////// Axioms ///////////////
-Opposite_Direction(Left, Right).
-Opposite_Direction(Top, Bottom).
+Opposite_Direction(DLeft, DRight).
+Opposite_Direction(DTop, DBottom).
 Opposite_Direction(a, b) :-
     Opposite_Direction(b, a).
 Opposite_Axis(X, Y).
 Opposite_Axis(Y, X).
-Axis(Left, X).
-Axis(Top, Y).
+Axis(DLeft, X).
+Axis(DTop, Y).
 Axis(dir, a) :-
     Axis(dir__prime, a),
     Opposite_Direction(dir, dir__prime).
 
-Direction_Factor(Right, 1).
-Direction_Factor(Bottom, 1).
-Direction_Factor(Left, -1).
-Direction_Factor(Top, -1).
+Direction_Factor(DRight, 1).
+Direction_Factor(DBottom, 1).
+Direction_Factor(DLeft, -1).
+Direction_Factor(DTop, -1).
 
-Side(rectangle, Left, value) :-
-    Coordinate(rectangle, X, value).
-Side(rectangle, Top, value) :-
-    Coordinate(rectangle, X, value).
+Side(rectangle, DLeft, value) :-
+    InFluent(Coordinate{rectangle, X, value}).
 
-Side(rectangle, Right, r_value) :-
-    Side(rectangle, Left, l_value),
-    Universe(.oid = rectangle, .child = E_Rectangles {
-        .rectangles = Rectangles {
-            .width = w
-        }
-    }),
+Side(rectangle, DTop, value) :-
+    InFluent(Coordinate{rectangle, Y, value}).
+
+Side(rectangle, DRight, r_value) :-
+    Side(rectangle, DLeft, l_value),
+    Attribute(rectangle, Attr_Width{w}),
     var r_value = l_value + w.
 
-Side(rectangle, Bottom, b_value) :-
-    Side(rectangle, Left, t_value),
-    Universe(.oid = rectangle, .child = E_Rectangles {
-        .rectangles = Rectangles {
-            .height = h
-        }
-    }),
+Side(rectangle, DBottom, b_value) :-
+    Side(rectangle, DLeft, t_value),
+    Attribute(rectangle, Attr_Width{h}),
     var b_value = t_value + h.
 
 On_Same_Line(a, b, axis) :-
@@ -158,8 +143,8 @@ Overlaps(a, b) :-
     On_Same_Line(a, b, Y).
 
 Predistance(a, b, b) :-
-    Instance(a, "Windows"),
-    Instance(b, "Windows"),
+    Instance(a, Windows),
+    Instance(b, Windows),
     On_Same_Line(a, b, axis),
     Axis(dir, axis),
     not Overlaps(a, b),
@@ -169,8 +154,8 @@ Predistance(a, b, b) :-
     var d = abs(e1 - e2).
 
 Predistance(a, b, d) :-
-    Instance(a, "Windows"),
-    Instance(b, "Monitors"),
+    Instance(a, Windows),
+    Instance(b, Monitors),
     Side(a, dir, e1),
     Side(b, dir, e2),
     var d = abs(e1 - e2).
@@ -208,44 +193,21 @@ Not_Closest(a, b) :-
     d__prime < d.
 
 Closest(a, b) :-
-    Instance(a, "Windows"),
-    Instance(b, "Rectangles"),
+    Instance(a, Windows),
+    Instance(b, Rectangles),
     not Not_Closest(a, b).
 
-Output_Coordinate(a, X, 0) :-
-    Instance(action, "Open_Window"),
-    Universe(
-        .oid = action,
-        .child = E_Actions {
-            .actions = Actions {
-                .child = E_Window_Action {
-                    .window_action = Window_Action {
-                        .target = a
-                    }
-                }
-            }
-        }
-    ).
-    
-    
-Output_Coordinate(a, Y, 0) :-
-    Instance(action, "Open_Window"),
-    Universe(
-        .oid = action,
-        .child = E_Actions {
-            .actions = Actions {
-                .child = E_Window_Action {
-                    .window_action = Window_Action {
-                        .target = a
-                    }
-                }
-            }
-        }
-    ).
+OutFluent(Coordinate{a, X, 0}) :-
+    Instance(action, Open_Window),
+    Attribute(action, Attr_Target{a}).
+
+OutFluent(Coordinate{a, Y, 0}) :-
+    Instance(action, Open_Window),
+    Attribute(action, Attr_Target{a}).
 
 Nearest_Side(a, b, dir) :-
-    Instance(a, "Windows"),
-    Instance(b, "Windows"),
+    Instance(a, Windows),
+    Instance(b, Windows),
     Side(a, dir, edge_a),
     Opposite_Direction(dir, dir__prime),
     Side(b, dir__prime, edge_b),
@@ -253,8 +215,8 @@ Nearest_Side(a, b, dir) :-
     edge_a - edge_b == d.
 
 Nearest_Side(w, m, dir) :-
-    Instance(w, "Windows"),
-    Instance(m, "Monitors"),
+    Instance(w, Windows),
+    Instance(m, Monitors),
     Side(w, dir, edge_w),
     Side(m, dir, edge_m),
     Distance(w, m, d),
@@ -265,39 +227,24 @@ Nearest_Side(a, b, dir) :-
     Opposite_Direction(dir, dir__prime),
     Nearest_Side(b, a, dir__prime).
 
-Output_Coordinate(window, axis, new_coord) :-
-    Instance(action, "Drag"),
-    Universe(
-        .oid = action,
-        .child = E_Actions {
-            .actions = Actions {
-                .child = E_Window_Action {
-                    .window_action = Window_Action {
-                        .target = a,
-                        .child = E_Drag {
-                            .drag = Drag {
-                                .distance = d,
-                                .direction = dir
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ),
+OutFluent(Coordinate{window, axis, new_coord}) :-
+    Instance(action, Move),
+    Attribute(action, Attr_Target{window}),
+    Attribute(action, Attr_Distance{d}),
+    Attribute(action, Attr_Direction{dir}),
     Axis(dir, axis),
     Direction_Factor(dir, f),
-    Coordinate(window, axis, coord),
+    InFluent(Coordinate{window, axis, coord}),
     var new_coord = coord + (d * f).
-    
+
 Not_Snapped(a, b) :-
-    Moving(a),
+    InFluent(Moving{a}),
     Attracts(a, b, dir),
     Attracts(c, a, dir__prime),
     dir__prime != dir.
     
 Snapped(a, b) :-
-    Moving(a),
+    InFluent(Moving{a}),
     Attracts(a, b, dir),
     not Not_Snapped(a, b).
 
@@ -309,14 +256,14 @@ Snapped_To_Corner(a, b) :-
     Nearest_Corner(a, b, dir, dir__prime),
     Side(a, dir__prime, side_a),
     Side(b, dir__prime, side_b),
-    abs(side_a - side_b) < corner_snapping_threshold().
+    abs(side_a - side_b) < (20 as s64).
 
 Final_Coordinate(a, ax, new_coord) :-
    Snapped(a, b),
    Distance(a, b, d),
    Nearest_Side(a, b, dir),
    Axis(dir, ax),
-   Coordinate(a, ax, coord),
+   InFluent(Coordinate{a, ax, coord}),
    Direction_Factor(dir, f),
    var new_coord = coord + d * f.
    
@@ -327,7 +274,7 @@ Final_Coordinate(a, ax__prime, new_coord) :-
    Axis(dir, ax),
    Opposite_Axis(ax, ax__prime),
    Nearest_Corner(a, b, dir, dir__prime),
-   Coordinate(a, ax__prime, coord),
+   InFluent(Coordinate{a, ax__prime, coord}),
    Side(a, dir__prime, side_a),
    Side(b, dir__prime, side_b),
    var new_coord = coord + (side_b - side_a).
@@ -338,25 +285,25 @@ Final_Coordinate(a, ax__prime, coord) :-
     Nearest_Side(a, b, dir),
     Axis(dir, ax),
     Opposite_Axis(ax, ax__prime),
-    Coordinate(a, ax__prime, coord).
+    InFluent(Coordinate{a, ax__prime, coord}).
 
 Not_Final_Coordinate(window, axis, coord) :-
-    Coordinate(window, axis, coord),
+    InFluent(Coordinate{window, axis, coord}),
     Snapped(window, other).
 
 Final_Coordinate(window, axis, coord) :-
-    Coordinate(window, axis, coord),
+    InFluent(Coordinate{window, axis, coord}),
     not Not_Final_Coordinate(window, axis, coord).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
-    d < snapping_threshold(),
+    d < (20 as s64),
     Closest(a, b),
     Nearest_Side(b, a, dir).
 
 Nearest_Side(a, b, dir) :-
-    Instance(a, "Windows"),
-    Instance(b, "Windows"),
+    Instance(a, Windows),
+    Instance(b, Windows),
     Side(a, dir, edge_a),
     Opposite_Direction(dir, dir__prime),
     Side(b, dir__prime, edge_b),
@@ -364,8 +311,8 @@ Nearest_Side(a, b, dir) :-
     edge_a - edge_a == d.
 
 Nearest_Side(w, m, dir) :-
-    Instance(w, "Windows"),
-    Instance(m, "Monitors"),
+    Instance(w, Windows),
+    Instance(m, Monitors),
     Side(w, dir, edge_w),
     Side(m, dir, edge_m),
     Distance(w, m, d),
