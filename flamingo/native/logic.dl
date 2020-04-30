@@ -2,14 +2,18 @@
 ///////////////////////////////////////////////
 // Built-in functions
 function abs(n: s64): s64 {
-   if (n > 0) n else n * -1
+   if (n > 0) {
+       n
+   } else {
+       n * -1
+   }
 }
-
-input relation Object(oid: OID, sort: Node)
-primary key (x) x.oid
 
 // Built-in Object ID type
 typedef OID = s64
+
+input relation Object(oid: OID, sort: Node)
+primary key (x) x.oid
 
 // Links together nodes in the sort hiearchy
 output relation Link(_1: Node, _2: Node)
@@ -18,17 +22,16 @@ Link(Actions, Universe).
 relation Is_A(_1: OID, _2: Node)
 Is_A(obj, sort) :- Object(obj, sort).
 
-relation Instance(_1: OID, _2: Node)
+output relation Instance(_1: OID, _2: Node)
 Instance(obj, sort) :- Is_A(obj, sort).
 Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
 
 input relation Attribute(oid: OID, val: AttributeValue)
-primary key (x) x.oid
 
-input relation InFluent(value: FluentValue)
-primary key (x) fluent_primary_key(x.value)
+input relation InFluent(params: FluentParam, ret: FluentValue)
+primary key (x) x.params
 
-output relation OutFluent(value: FluentValue)
+output relation OutFluent(params: FluentParam, ret: FluentValue)
 
 //////////// Dynamic Part of Lib ///////////////////
 ////////////////////////////////////////////////////
@@ -68,36 +71,33 @@ relation Axis(_1: Directions, ret: Axes)
 relation Direction_Factor(_1: Directions, ret: s64)
 relation Snapping_Threshold(ret: s64)
 relation Corner_Snapping_Threshold(ret: s64)
+
 /////// Fluents //////////////////
 // Basic
-typedef FluentValue = Coordinate{coordinate_1: OID, coordinate_2: Axes, coordinate_ret: s64 }
-    | Moving{moving_1: OID}
+typedef FluentParam = Param_Coordinate{coordinate_1: OID, coordinate_2: Axes}
+    | Param_Moving{moving_1: OID}
 
-function fluent_primary_key(x: FluentValue): OID {
-    match(x) {
-        Coordinate{.coordinate_1 = y} -> y,
-        Moving{.moving_1 = y} -> y
-    }
-}
+typedef FluentValue = Value_Coordinate{coordinate_ret: s64 }
+    | Value_Moving{moving_ret: bool}
 
 // Defined
-relation Side(_1: OID, _2: Directions, _3: s64)
-relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
-relation Overlaps(_1: OID, _2: OID)
-relation Attracts(_1: OID, _2: OID, _3: Directions)
-relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+output relation Side(_1: OID, _2: Directions, _3: s64)
+output relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
+output relation Overlaps(_1: OID, _2: OID)
+output relation Attracts(_1: OID, _2: OID, _3: Directions)
+output relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 output relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
-relation Not_Snapped(_1: OID, _2: OID)
-relation Snapped(_1: OID, _2: OID)
-relation Snapped_To_Corner(_1: OID, _2: OID)
-relation Stationary(_1: OID)
-relation Predistance(_1: OID, _2: OID, _3: s64)
-relation Not_Distance(_1: OID, _2: OID, _3: s64)
-relation Distance(_1: OID, _2: OID, _3: s64)
-relation Not_Closest(_1: OID, _2: OID)
-relation Closest(_1: OID, _2: OID)
-relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
-relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+output relation Not_Snapped(_1: OID, _2: OID)
+output relation Snapped(_1: OID, _2: OID)
+output relation Snapped_To_Corner(_1: OID, _2: OID)
+output relation Stationary(_1: OID)
+output relation Predistance(_1: OID, _2: OID, _3: s64, _4: Directions)
+output relation Not_Distance(_1: OID, _2: OID, _3: s64)
+output relation Distance(_1: OID, _2: OID, _3: s64)
+output relation Not_Closest(_1: OID, _2: OID)
+output relation Closest(_1: OID, _2: OID)
+output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
+output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 ///////////// Axioms ///////////////
 Snapping_Threshold(20).
@@ -121,10 +121,10 @@ Direction_Factor(DLeft, -1).
 Direction_Factor(DTop, -1).
 
 Side(rectangle, DLeft, value) :-
-    InFluent(Coordinate{rectangle, X, value}).
+    InFluent(Param_Coordinate{rectangle, X}, Value_Coordinate{value}).
 
 Side(rectangle, DTop, value) :-
-    InFluent(Coordinate{rectangle, Y, value}).
+    InFluent(Param_Coordinate{rectangle, Y}, Value_Coordinate{value}).
 
 Side(rectangle, DRight, r_value) :-
     Side(rectangle, DLeft, l_value),
@@ -151,34 +151,35 @@ Overlaps(a, b) :-
     On_Same_Line(a, b, X),
     On_Same_Line(a, b, Y).
 
-Predistance(a, b, b) :-
-    Instance(a, Windows),
+Predistance(1, b, d, dir) :-
+    Instance(1, Windows),
     Instance(b, Windows),
-    On_Same_Line(a, b, axis),
-    Axis(dir, axis),
-    not Overlaps(a, b),
-    Side(a, dir, e1),
+    not Overlaps(1, b),
+    On_Same_Line(1, b, axis),
+    Opposite_Axis(axis, axis__prime),
+    Axis(dir, axis__prime),
+    Side(1, dir, e1),
     Side(b, dir__prime, e2),
     Opposite_Direction(dir, dir__prime),
     var d = abs(e1 - e2).
 
-Predistance(a, b, d) :-
+Predistance(a, b, d, dir) :-
     Instance(a, Windows),
     Instance(b, Monitors),
     Side(a, dir, e1),
     Side(b, dir, e2),
     var d = abs(e1 - e2).
 
-Predistance(a, b, d) :-
-    Predistance(b, a, d).
+Predistance(a, b, d, x) :-
+    Predistance(b, a, d, x).
 
 Not_Distance(a, b, d) :-
-    Predistance(a, b, d),
-    Predistance(a, b, d__prime),
+    Predistance(a, b, d, _),
+    Predistance(a, b, d__prime, _),
     d__prime < d.
 
 Distance(a, b, d) :-
-    Predistance(a, b, d),
+    Predistance(a, b, d, _),
     not Not_Distance(a, b, d).
 
 Nearest_Corner(a, b, dir, dir__prime) :-
@@ -206,11 +207,11 @@ Closest(a, b) :-
     Instance(b, Rectangles),
     not Not_Closest(a, b).
 
-OutFluent(Coordinate{a, X, 0}) :-
+OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Attribute(action, Attr_Target{a}).
 
-OutFluent(Coordinate{a, Y, 0}) :-
+OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Attribute(action, Attr_Target{a}).
 
@@ -236,24 +237,34 @@ Nearest_Side(a, b, dir) :-
     Opposite_Direction(dir, dir__prime),
     Nearest_Side(b, a, dir__prime).
 
-OutFluent(Coordinate{window, axis, new_coord}) :-
+OutFluent(Param_Coordinate{window, axis}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Attribute(action, Attr_Target{window}),
     Attribute(action, Attr_Distance{d}),
     Attribute(action, Attr_Direction{dir}),
     Axis(dir, axis),
     Direction_Factor(dir, f),
-    InFluent(Coordinate{window, axis, coord}),
+    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
     var new_coord = coord + (d * f).
 
+OutFluent(Param_Moving{window}, Value_Moving{true}) :-
+    Instance(action, Move),
+    Attribute(action, Attr_Target{window}).
+
+OutFluent(Param_Moving{other}, Value_Moving{false}) :-
+    Instance(action, Move),
+    Attribute(action, Attr_Target{window}),
+    Instance(other, Windows),
+    other != window.
+
 Not_Snapped(a, b) :-
-    InFluent(Moving{a}),
+    InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(a, b, dir),
     Attracts(c, a, dir__prime),
     dir__prime != dir.
     
 Snapped(a, b) :-
-    InFluent(Moving{a}),
+    InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(a, b, dir),
     not Not_Snapped(a, b).
 
@@ -272,7 +283,7 @@ Final_Coordinate(a, ax, new_coord) :-
    Distance(a, b, d),
    Nearest_Side(a, b, dir),
    Axis(dir, ax),
-   InFluent(Coordinate{a, ax, coord}),
+   InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
    Direction_Factor(dir, f),
    var new_coord = coord + d * f.
    
@@ -283,7 +294,7 @@ Final_Coordinate(a, ax__prime, new_coord) :-
    Axis(dir, ax),
    Opposite_Axis(ax, ax__prime),
    Nearest_Corner(a, b, dir, dir__prime),
-   InFluent(Coordinate{a, ax__prime, coord}),
+   InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}),
    Side(a, dir__prime, side_a),
    Side(b, dir__prime, side_b),
    var new_coord = coord + (side_b - side_a).
@@ -294,14 +305,14 @@ Final_Coordinate(a, ax__prime, coord) :-
     Nearest_Side(a, b, dir),
     Axis(dir, ax),
     Opposite_Axis(ax, ax__prime),
-    InFluent(Coordinate{a, ax__prime, coord}).
+    InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
 
 Not_Final_Coordinate(window, axis, coord) :-
-    InFluent(Coordinate{window, axis, coord}),
+    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
     Snapped(window, other).
 
 Final_Coordinate(window, axis, coord) :-
-    InFluent(Coordinate{window, axis, coord}),
+    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
     not Not_Final_Coordinate(window, axis, coord).
 
 Attracts(a, b, dir) :-

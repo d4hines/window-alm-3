@@ -26,7 +26,7 @@ module Window_demo
     fluents
         basic
             total Coordinate : Rectangles x Axes -> Integers
-            Moving : Windows
+            Moving : Windows -> Booleans
         defined
             Side : Rectangles x Directions x Integers -> Booleans.
             On_Same_Line : Rectangles x Rectangles x Axes -> Booleans
@@ -37,7 +37,7 @@ module Window_demo
             Not_Snapped : Windows x Rectangles -> Booleans
             Snapped : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
-            PreDistance : Windows x Rectanglest x Integers -> Booleans
+            Predistance : Windows x Rectanglest x Integers -> Booleans
             Not_Distance : Windows x Rectangles x Integers -> Booleans
             Distance : Windows x Rectangles x Integers -> Booleans
             Not_Closest : Windows x Rectangles -> Booleans
@@ -95,33 +95,35 @@ module Window_demo
             On_Same_Line(a, b, X),
             On_Same_Line(a, b, Y).
 
-        PreDistance(a, b, b) if
+        Predistance(a, b, d) if
             Instance(a, Windows),
             Instance(b, Windows),
-            On_Same_Line(a, b),
             -Overlaps(a, b),
+            On_Same_Line(a, b, axis),
+            Opposite_Axis(axis, axis'),
+            Axis(dir, axis__prime),
             Side(a, dir) = e1,
             Side(b, dir') = e2,
             Opposite(dir) = dir',
             var d = | e1 - e2 |.
 
-        PreDistance(a, b, d) if
+        Predistance(a, b, d) if
             Instance(a, Windows),
             Instance(b, Monitors),
             Side(a, dir) = e1,
             Side(b, dir) = e2,
             var d = | e1 - e2 |.
 
-        PreDistance(a, b, d) if
-            PreDistance(b, a, d).
+        Predistance(a, b, d) if
+            Predistance(b, a, d).
 
         Not_Distance(a, b, d) if
-            PreDistance(a, b, d),
-            PreDistance(a, b, d'),
+            Predistance(a, b, d),
+            Predistance(a, b, d'),
             d' < d.
         
         Distance(a, b, d) if
-            PreDistance(a, b, d),
+            Predistance(a, b, d),
             -Not_Distance(a, b, d).
 
         Nearest_Corner(a, b, dir, dir') if
@@ -189,18 +191,24 @@ module Window_demo
             Coordinate(window, axis) = coord,
             new_coord = coord + (d * f).
             
-        occurs(action) causes Moving(window) if
+        occurs(action) causes Moving(window) = true if
             Instance(action, Move),
             Target(action) = window.
-        
+    
+        occurs(Action) causes Moving(other) = false if
+            Instance(action, Move),
+            Target(action) = window,
+            Instance(other, Windows),
+            other != window.
+
         Not_Snapped(a, b) if
-            Moving(a),
+            Moving(a) = true,
             Attracts(a, b, dir),
             Attracts(c, a, dir'),
             dir' != dir.
             
         Snapped(a, b) if,
-            Moving(a),
+            Moving(a) = true,
             Attracts(a, b, dir),
             -Not_Snapped(a, b).
 
@@ -259,8 +267,8 @@ module Window_demo
             Nearest_Side(b, a, dir).
         
         Nearest_Side(a, b, dir) if
-            Instance(a, windows),
-            Instance(b, windows),
+            Instance(a, Windows),
+            Instance(b, Windows),
             Side(a, dir, edge_a),
             Opposite_Direction(dir) = dir',
             Side(b, dir', edge_b),
