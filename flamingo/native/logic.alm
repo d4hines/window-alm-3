@@ -1,0 +1,278 @@
+#const corner_snapping_threshold = 20.
+#const snapping_threshold = 20.
+
+module Window_demo
+    sorts
+        Axes :: { X, Y }
+        Directions :: { DLeft, DRight, DTop, DBottom }
+        Rectangles :: Universe
+            attributes
+                Width : Integers
+                Height : Integers
+        Monitors :: Rectangles
+        Windows :: Rectangles
+        Window_Action :: Actions
+            attributes
+                Target : Windows
+        Open_Window :: Window_Action
+        Move :: Window_Action
+           attributes
+                Distance : Integers
+                Direction : Directions
+    statics
+        Opposite_Direction : Directions -> Directions.
+        Opposite_Axis : Axes -> Axes
+        Axis : Direction -> Axes
+        Direction_Factor : Directions -> Integers
+    fluents
+        basic
+            total Coordinate : Rectangles x axes -> Integers
+        defined
+            Side : Rectangles x Directions x Integers -> Booleans.
+            On_Same_Line : Rectangles x Rectangles x axes -> Booleans
+            Overlaps : Rectangles x Rectangles -> Booleans
+            Attracts : Rectangles x Rectangles x Directions -> Booleans
+            Not_Final_Coordinate : Windows x axes x Integers -> Booleans
+            Final_Coordinate : Windows x axes x Integers -> Booleans
+            Not_Snapped : Windows x Rectangles -> Booleans
+            Snapped : Windows x Rectangles -> Booleans
+            Snapped_To_Corner : Windows x Rectangles -> Booleans
+            Moving : Windows -> Booleans
+            Stationary : Windows -> Booleans
+            PreDistance : Windows x Rectanglest x Integers -> Booleans
+            Not_Distance : Windows x Rectangles x Integers -> Booleans
+            Distance : Windows x Rectangles x Integers -> Booleans
+            Not_Closest : Windows x Rectangles -> Booleans
+            Closest : Windows x Rectangles -> Booleans
+            Nearest_Side : Windows x Rectangles x Directions -> Booleans
+            Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
+    axioms
+        Opposite_Direction(DLeft) = DRight.
+        Opposite_Direction(DTop) = DBottom.
+        Opposite_Direction(a) = b if
+            Opposite_Direction(b) = a.
+        Opposite_Axis(X) = Y.
+        Opposite_Axis(Y) = X.
+        Axis(DLeft) = X.
+        Axis(DTop) = Y.
+        Axis(dir, a) if
+            Axis(dir', a),
+            Opposite_Direction(dir, dir').
+
+        Direction_Factor(DRight) = 1.
+        Direction_Factor(DBottom) = 1.
+        Direction_Factor(DLeft) = -1.
+        Direction_Factor(DTop) = -1.
+
+        Side(rectangle, DLeft, value) if
+            Coordinate(rectangle, X) = value.
+        Side(rectangle, DTop, value) if
+            Coordinate(rectangle, X) = value.
+
+        Side(rectangle, DRight, r_value) if
+            Side(rectangle, DLeft, l_value),
+            Width(rectangle) = w,
+            var r_value = l_value + w.
+
+        Side(rectangle, DBottom, b_value) if
+            Side(rectangle, DTop, t_value),
+            Height(rectangle) = h,
+            var b_value = t_value + h.
+
+        On_Same_Line(a, b, axis) if
+            Side(a, dir) = a1,
+            Axis(dir) = axis,
+            Opposite_Direction(dir) = dir',
+            Side(a, dir') = a2,
+            Side(a, dir) = b1,
+            Side(a, dir') = b2,
+            a != b,
+            a1 < b2,
+            a2 > b1.
+
+        Overlaps(a, b) if
+            On_Same_Line(a, b, X),
+            On_Same_Line(a, b, Y).
+
+        PreDistance(a, b, b) if
+            Instance(a, Windows),
+            Instance(b, Windows),
+            On_Same_Line(a, b),
+            -Overlaps(a, b),
+            Side(a, dir) = e1,
+            Side(b, dir') = e2,
+            Opposite(dir) = dir',
+            var d = | e1 - e2 |.
+
+        PreDistance(a, b, d) if
+            Instance(a, Windows),
+            Instance(b, Monitors),
+            Side(a, dir) = e1,
+            Side(b, dir) = e2,
+            var d = | e1 - e2 |.
+
+        PreDistance(a, b, d) if
+            PreDistance(b, a, d).
+
+        Not_Distance(a, b, d) if
+            PreDistance(a, b, d),
+            PreDistance(a, b, d'),
+            d' < d.
+        
+        Distance(a, b, d) if
+            PreDistance(a, b, d),
+            -Not_Distance(a, b, d).
+
+        Nearest_Corner(a, b, dir, dir') if
+            Nearest_Side(a, b, dir),
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            Axis(dir') = ax',
+            Opposite_Direction(dir') = dir'',
+            Side(a, dir', a1),
+            Side(a, dir', b1),
+            Side(a, dir'', a2),
+            Side(b, dir'', b2),
+            | a1 - b1 | < | a2 - b2|.
+        
+        Nearest_Corner(a, b, dir, dir') if
+            Nearest_Corner(a, b, dir', dir).
+        
+        Not_Closest(a, b) if 
+            Distance(a, b, d),
+            distnace(a, c, d'),
+            d' < d.
+        
+        Closest(a, b) if
+            Instance(a, Windows),
+            Instance(b, Rectangles),
+            -Not_Closest(a, b).
+        
+        occurs(action) causes Coordinate(a, X) = 0 if
+            Instance(action, Open_Window),
+            Target(action) = a.
+        
+        occurs(action) causes Coordinate(a, Y) = 0 if
+           Instance(Action, Open_Window),
+           Target(action) = a.
+        
+        Nearest_Side(a, b, dir) if
+            Instance(a, Windows),
+            Instance(b, Windows),
+            Side(a, dir, edge_a),
+            Opposite_Direction(dir) = dir',
+            Side(b, dir', edge_b),
+            Distance(a, b) = d,
+            edge_a - edge_b == d.
+        
+        Nearest_Side(w, m, dir) if
+            Instance(w, Windows),
+            Instance(m, Monitors),
+            Side(w, dir, edge_w),
+            Side(m, dir, edge_m),
+            Distance(w, m) = d,
+            var d' = edge_w - edge_m.
+            d == d'.
+
+        Nearest_Side(a, b, dir) if
+            Opposite_Direction(dir) = dir',
+            Nearest_Side(b, a, dir').
+        
+        occurs(action) causes Coordinate(window, axis, new_coord) if
+            Instance(action, Move),
+            Target(action) = window,
+            Distance(action) = d,
+            Direction(action) = dir,
+            var axis = Axis(dir),
+            Direction_Factor(dir) = f,
+            Coordinate(window, axis) = coord,
+            var new_coord = coord + (d * f).
+            
+        occurs(action) causes Moving(window) if
+            Instance(action, Move),
+            Target(action) = window.
+        
+        Not_Snapped(a, b) if
+            Moving(a),
+            Attracts(a, b, dir),
+            Attracts(c, a, dir'),
+            dir' != dir.
+            
+        Snapped(a, b) if,
+            Moving(a),
+            Attracts(a, b, dir),
+            -Not_Snapped(a, b).
+
+        Snapped_To_Corner(a, ax', new_coord) if
+            Snapped(a, b),
+            Nearest_Side(a, b, dir),
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax'
+            Nearest_Corner(a, b, dir, dir'),
+            Side(a, dir') = side_a,
+            Side(b, dir') = side_b,
+            |side_a - side_b| < corner_snapping_threshold.
+    
+        Final_Coordinate(a, ax, new_coord) if
+           Snapped(a, b),
+           Distance(a, b, d),
+           Nearest_Side(a, b, dir),
+           Axis(dir) = ax,
+           Coordinate(a, ax) = coord,
+           Direction_Factor(dir) = f,
+           var new_coord = coord + d * f.
+           
+        Final_Coordinate(a, ax', new_coord) if
+           Snapped(a, b),
+           Snapped_To_Corner(a, b),
+           Nearest_Side(a, b, dir),
+           Axis(dir) = ax,
+           Opposite_Axis(ax) = ax'
+           Nearest_Corner(a, b, dir, dir'),
+           Coordinate(a, ax') = coord,
+           Side(a, dir') = side_a,
+           Side(b, dir') = side_b,
+           var new_coord = coord + (side_b - side_a).
+
+        Final_Coordinate(a, ax', coord) if
+            Snapped(a, b),
+            -Snapped_To_Corner(a, b),
+            Nearest_Side(a, b, dir),
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax'
+            Coordinate(a, ax', coord).
+
+        Not_Final_Coordinate(window, axis, coord) if
+            Coordinate(window, axis) = coord,
+            Snapped(window, other).
+        
+
+        Final_Coordinate(window, axis, coord) if
+            Coordinate(window, axis) = coord,
+            -Not_Final_Coordinate(window, axis, coord).
+        
+        Attracts(a, b, d) if
+            Distance(a, b) > snapping_threshold,
+            Closest(a, b),
+            Nearest_Side(b, a, d).
+        
+        Nearest_Side(a, b, dir) if
+            Instance(a, windows),
+            Instance(b, windows),
+            Side(a, dir, edge_a),
+            Opposite_Direction(dir) = dir',
+            Side(b, dir', edge_b),
+            Distance(a, b) = d,
+            edge_a - edge_a == d.
+        
+        Nearest_Side(w, m, dir) if
+            Instance(w, Windows),
+            Instance(m, Monitors),
+            Side(w, dir, edge_w),
+            Side(m, dir, edge_m),
+            Distance(w, m) = d,
+            edge_w - edge_m = d.
+               
+        Nearest_Side(a, b, dir) if
+            Opposite_Direction(dir) = dir',
+            Nearest_Side(b, a, dir').

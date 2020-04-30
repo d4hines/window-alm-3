@@ -15,194 +15,72 @@ function snapping_threshold(): s64 {
 // Built-in Object ID type
 typedef OID = s64
 
+
+////////// Sort Hiearchy ///////////////////
 // Sort Literals
 typedef Axes = X | Y
 typedef Directions = DLeft | DRight | DTop | DBottom
-
-////////// Sort Hiearchy ///////////////////
 // Nodes of the hierarchy
-typedef Node = T_Universe
-| T_Actions
-| T_Window_Action
-| T_Open_Window
-| T_Drag
-| T_Rectangles
-| T_Monitors
-| T_Windows
+typedef Node = string
 
 // Sorts and attributes
-output relation Universe(oid: OID, sort: Node, child: C_Universe)
+input relation Object(oid: OID, sort: Node)
+typedef AttributeValue = Width(width: s64)
+    | Height(height: s64)
+    | Target(target: OID)
+    | Distance(distance: s64)
+    | Direction()
 
-typedef C_Universe = E_Actions {
-    actions: Actions
-}
-|
-E_Rectangles {
-    rectangles: Rectangles
-}
+input relation Attribute(oid: OID, )
 
-typedef Actions = Actions {
-    child: C_Actions
-}
+relation Width(oid: OID, val: s64)
+relation Height(oid: OID, val: s64)
+relation Target(oid: OID, val: OID)
+relation Distance(oid: OID, val: s64)
+relation Direction(oid: OID, val: string)
 
-typedef C_Actions = E_Window_Action {
-    window_action: Window_Action
-}
+input relation Fluent(id: s64, type: string, value: string)
+relation Coordinate()
+Coordinate() :- Fluent()
 
-typedef Window_Action = Window_Action {
-    target: OID,
-    child: C_Window_Action
-}
-
-typedef C_Window_Action = E_Open_Window {
-    open_window: Open_Window
-}
-|
-E_Drag {
-    drag: Drag
-}
-
-typedef Open_Window = Open_Window{
-}
-
-typedef Drag = Drag {
-   direction: Directions,
-   distance: s64
-}
-// Bottom of 1st branch.
-
-typedef Rectangles = Rectangles {
-    width: s64,
-    height: s64,
-    child: C_rectangles
-}
-
-typedef C_rectangles = E_Monitors{
-    monitors: Monitors
-}
-|
-E_Windows {
-    windows: Windows
-}
-
-typedef Monitors = Monitors {
-}
-
-typedef Windows = Windows {
-}
-// Bottom of 2nd branch
-
-// Terminal Sort Constructors
-input relation Input_Open_Window(oid: OID, target: OID)
-primary key (u) u.oid
-
-Universe(
-        .oid = oid,
-        .sort = T_Open_Window,
-        .child = E_Actions {
-            .actions = Actions {
-                .child = E_Window_Action {
-                    .window_action = Window_Action {
-                        .target = target,
-                        .child = E_Open_Window {
-                            .open_window = Open_Window {}
-                        }
-                    }
-                }
-            }
-        }
-    ) :- Input_Open_Window(oid, target).
-
-input relation Input_Drag(oid: OID, target: OID, distance: s64, direction: Directions)
-primary key (u) u.oid
-Universe(
-        .oid = oid,
-        .sort = T_Drag,
-        .child = E_Actions {
-            .actions = Actions {
-                .child = E_Window_Action {
-                    .window_action = Window_Action {
-                        .target = target,
-                        .child = E_Drag {
-                            .drag = Drag {
-                                .distance = distance,
-                                .direction = direction
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ) :- Input_Drag(oid, target, distance, direction).
-
-input relation Input_Monitors(oid: OID, width: s64, height: s64)
-primary key (u) u.oid
-Universe(
-    .oid = oid,
-    .sort = T_Monitors,
-    .child = E_Rectangles {
-        .rectangles = Rectangles {
-            .width = width,
-            .height = height,
-            .child = E_Monitors {
-                .monitors = Monitors {}
-            }
-        }
-    }
-) :- Input_Monitors(oid, width, height).
-
-input relation Input_Windows(oid: OID, width: s64, height: s64)
-primary key (u) u.oid
-Universe(
-    .oid = oid,
-    .sort = T_Windows,
-    .child = E_Rectangles {
-        .rectangles = Rectangles {
-            .width = width,
-            .height = height,
-            .child = E_Windows {
-                .windows = Windows {}
-            }
-        }
-    }
-) :- Input_Windows(oid, width, height).
+output relation Output_Fluent(id: s64, type:string, value: string)
 
 // Encode Hiearchy facts
 output relation Link(_1: Node, _2: Node)
-Link(T_Actions, T_Universe).
-Link(T_Window_Action, T_Actions).
-Link(T_Open_Window, T_Window_Action).
-Link(T_Drag, T_Window_Action).
-Link(T_Rectangles, T_Universe).
-Link(T_Monitors, T_Rectangles).
-Link(T_Windows, T_Rectangles).
+Link("Actions", "Universe").
+Link("Window_Action", "Actions").
+Link("Open_Window", "Window_Action").
+Link("Drag", "Window_Action").
+Link("Rectangles", "Universe").
+Link("Monitors", "Rectangles").
+Link("Windows", "Rectangles").
 
 output relation Is_A(_1: OID, _2: Node)
-Is_A(obj, node) :- Universe(obj, node, _).
+Is_A(obj, sort) :- Object(obj, sort).
 
 output relation Instance(_1: OID, _2: Node)
-Instance(obj, node) :- Is_A(obj, node).
-Instance(obj, node1) :- Instance(obj, node2), Link(node1, node2).
+Instance(obj, sort) :- Is_A(obj, node).
+Instance(obj, sort1) :- Instance(obj, sort2), Link(sort1, sort2).
 
 // Statics
-output relation Opposite_Direction(_1: Directions, ret: Directions)
-output relation Opposite_Axis(_1: Axes, ret: Axes)
-output relation Axis(_1: Directions, ret: Axes)
-output relation Direction_Factor(_1: Directions, ret: s64)
+output relation Opposite_Direction(_1: string, ret: string)
+output relation Opposite_Axis(_1: string, ret: string)
+output relation Axis(_1: string, ret: string)
+output relation Direction_Factor(_1: string, ret: s64)
 
 /////// Fluents //////////////////
 // Basic
-input relation Input_Coordinate(_1: OID, _2: Axes, ret: s64)
-output relation Coordinate(_1: OID, _2: Axes, ret: s64)
+input relation Input_Coordinate(_1: OID, _2: string, ret: s64)
+output relation Coordinate(_1: OID, _2: string, ret: s64)
 Coordinate(x1, x2, x3) :- Input_Coordinate(x1, x2, x3).
 
 // Defined
-output relation Side(_1: OID, _2: Directions, _3: s64)
-output relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
+output relation Side(_1: OID, _2: string, _3: s64)
+output relation On_Same_Line(_1: OID, _2: OID, _3: string)
 output relation Overlaps(_1: OID, _2: OID)
-output relation Attracts(_1: OID, _2: OID, _3: Directions)
-output relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
-output relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+output relation Attracts(_1: OID, _2: OID, _3: string)
+output relation Not_Final_Coordinate(_1: OID, _2: string, _3: s64)
+output relation Final_Coordinate(_1: OID, _2: string, _3: s64)
 output relation Not_Snapped(_1: OID, _2: OID)
 output relation Snapped(_1: OID, _2: OID)
 output relation Snapped_To_Corner(_1: OID, _2: OID)
@@ -213,41 +91,41 @@ output relation Not_Distance(_1: OID, _2: OID, _3: s64)
 output relation Distance(_1: OID, _2: OID, _3: s64)
 output relation Not_Closest(_1: OID, _2: OID)
 output relation Closest(_1: OID, _2: OID)
-output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
-output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+output relation Nearest_Side(_1: OID, _2: OID, _3: string)
+output relation Nearest_Corner(_1: OID, _2: OID, _3: string, _4: string)
 
 // Causal Law Outputs
-output relation Output_Coordinate(_1: OID, _2: Axes, ret: s64)
+output relation Output_Coordinate(_1: OID, _2: string, ret: s64)
 
 output relation Output_Moving(_1: OID)
 input relation Input_Moving(_1: OID)
 Moving(x1) :-Input_Moving(x1).
 
 ///////////// Axioms ///////////////
-Opposite_Direction(DLeft, DRight).
-Opposite_Direction(DTop, DBottom).
+Opposite_Direction(Left, Right).
+Opposite_Direction(Top, Bottom).
 Opposite_Direction(a, b) :-
     Opposite_Direction(b, a).
 Opposite_Axis(X, Y).
 Opposite_Axis(Y, X).
-Axis(DLeft, X).
-Axis(DTop, Y).
+Axis(Left, X).
+Axis(Top, Y).
 Axis(dir, a) :-
     Axis(dir__prime, a),
     Opposite_Direction(dir, dir__prime).
 
-Direction_Factor(DRight, 1).
-Direction_Factor(DBottom, 1).
-Direction_Factor(DLeft, -1).
-Direction_Factor(DTop, -1).
+Direction_Factor(Right, 1).
+Direction_Factor(Bottom, 1).
+Direction_Factor(Left, -1).
+Direction_Factor(Top, -1).
 
-Side(rectangle, DLeft, value) :-
+Side(rectangle, Left, value) :-
     Coordinate(rectangle, X, value).
-Side(rectangle, DTop, value) :-
+Side(rectangle, Top, value) :-
     Coordinate(rectangle, X, value).
 
-Side(rectangle, DRight, r_value) :-
-    Side(rectangle, DLeft, l_value),
+Side(rectangle, Right, r_value) :-
+    Side(rectangle, Left, l_value),
     Universe(.oid = rectangle, .child = E_Rectangles {
         .rectangles = Rectangles {
             .width = w
@@ -255,8 +133,8 @@ Side(rectangle, DRight, r_value) :-
     }),
     var r_value = l_value + w.
 
-Side(rectangle, DBottom, b_value) :-
-    Side(rectangle, DLeft, t_value),
+Side(rectangle, Bottom, b_value) :-
+    Side(rectangle, Left, t_value),
     Universe(.oid = rectangle, .child = E_Rectangles {
         .rectangles = Rectangles {
             .height = h
@@ -280,8 +158,8 @@ Overlaps(a, b) :-
     On_Same_Line(a, b, Y).
 
 Predistance(a, b, b) :-
-    Instance(a, T_Windows),
-    Instance(b, T_Windows),
+    Instance(a, "Windows"),
+    Instance(b, "Windows"),
     On_Same_Line(a, b, axis),
     Axis(dir, axis),
     not Overlaps(a, b),
@@ -291,8 +169,8 @@ Predistance(a, b, b) :-
     var d = abs(e1 - e2).
 
 Predistance(a, b, d) :-
-    Instance(a, T_Windows),
-    Instance(b, T_Monitors),
+    Instance(a, "Windows"),
+    Instance(b, "Monitors"),
     Side(a, dir, e1),
     Side(b, dir, e2),
     var d = abs(e1 - e2).
@@ -330,12 +208,12 @@ Not_Closest(a, b) :-
     d__prime < d.
 
 Closest(a, b) :-
-    Instance(a, T_Windows),
-    Instance(b, T_Rectangles),
+    Instance(a, "Windows"),
+    Instance(b, "Rectangles"),
     not Not_Closest(a, b).
 
 Output_Coordinate(a, X, 0) :-
-    Instance(action, T_Open_Window),
+    Instance(action, "Open_Window"),
     Universe(
         .oid = action,
         .child = E_Actions {
@@ -351,7 +229,7 @@ Output_Coordinate(a, X, 0) :-
     
     
 Output_Coordinate(a, Y, 0) :-
-    Instance(action, T_Open_Window),
+    Instance(action, "Open_Window"),
     Universe(
         .oid = action,
         .child = E_Actions {
@@ -366,8 +244,8 @@ Output_Coordinate(a, Y, 0) :-
     ).
 
 Nearest_Side(a, b, dir) :-
-    Instance(a, T_Windows),
-    Instance(b, T_Windows),
+    Instance(a, "Windows"),
+    Instance(b, "Windows"),
     Side(a, dir, edge_a),
     Opposite_Direction(dir, dir__prime),
     Side(b, dir__prime, edge_b),
@@ -375,8 +253,8 @@ Nearest_Side(a, b, dir) :-
     edge_a - edge_b == d.
 
 Nearest_Side(w, m, dir) :-
-    Instance(w, T_Windows),
-    Instance(m, T_Monitors),
+    Instance(w, "Windows"),
+    Instance(m, "Monitors"),
     Side(w, dir, edge_w),
     Side(m, dir, edge_m),
     Distance(w, m, d),
@@ -388,7 +266,7 @@ Nearest_Side(a, b, dir) :-
     Nearest_Side(b, a, dir__prime).
 
 Output_Coordinate(window, axis, new_coord) :-
-    Instance(action, T_Drag),
+    Instance(action, "Drag"),
     Universe(
         .oid = action,
         .child = E_Actions {
@@ -477,8 +355,8 @@ Attracts(a, b, dir) :-
     Nearest_Side(b, a, dir).
 
 Nearest_Side(a, b, dir) :-
-    Instance(a, T_Windows),
-    Instance(b, T_Windows),
+    Instance(a, "Windows"),
+    Instance(b, "Windows"),
     Side(a, dir, edge_a),
     Opposite_Direction(dir, dir__prime),
     Side(b, dir__prime, edge_b),
@@ -486,8 +364,8 @@ Nearest_Side(a, b, dir) :-
     edge_a - edge_a == d.
 
 Nearest_Side(w, m, dir) :-
-    Instance(w, T_Windows),
-    Instance(m, T_Monitors),
+    Instance(w, "Windows"),
+    Instance(m, "Monitors"),
     Side(w, dir, edge_w),
     Side(m, dir, edge_m),
     Distance(w, m, d),
