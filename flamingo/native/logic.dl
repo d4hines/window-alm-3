@@ -104,8 +104,12 @@ output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 // Bundle of all the output fluents
-typedef Output = Out_Final_Cooridinate{final_coordinate: Final_Coordinate}
+typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
     | Out_Snapped{snapped: Snapped}
+
+output relation Output(val: Output_Value)
+Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
+Output(Out_Snapped{snapped}) :- Snapped[snapped].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
