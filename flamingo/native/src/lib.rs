@@ -22,14 +22,11 @@ extern crate serde_derive;
 
 // Struct for the DB.
 pub struct Flamingo {
-    id: i32,
-    first_name: String,
-    last_name: String,
-    email: String,
     hddlog: HDDlog,
 }
 
 fn new_object_to_cmd(new_object: NewObject) -> Vec<Update<ddval::DDValue>> {
+    println!("New Object: {}", new_object);
     let obj = vec![Update::Insert {
         relid: Relations::Object as RelId,
         v: Value::Object(new_object.object).into_ddvalue(),
@@ -60,7 +57,13 @@ impl Flamingo {
         let cmds = new_object_to_cmd(new_object);
         self.hddlog.transaction_start().unwrap();
         self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
-        self.hddlog.transaction_commit();
+        let mut delta = self.hddlog.transaction_commit_dump_changes().unwrap();
+        let instances = delta.get_rel(Relations::Instance as RelId);
+
+        instances.into_iter().for_each(|(i,_)| unsafe {
+            let Value::Instance(instance) = DDValConvert::from_ddvalue_ref(i);
+            println!("{}", instance);
+        });
     }
 
     fn dispatch(&self, action: NewObject) -> Vec<StateChange> {
@@ -74,6 +77,7 @@ impl Flamingo {
         //////////////// Phase 2: Stabilize New State ////////////////
         // Extract the OutFluents returned from the action transaction.
         let outfluents = action_delta.get_rel(Relations::OutFluent as RelId);
+        println!("outfluents length {}", outfluents.len());
         // Map each of them into InFluents
         let outfluent_cmds: Vec<Update<ddval::DDValue>> = outfluents
             .into_iter()
@@ -81,6 +85,8 @@ impl Flamingo {
                 // The call to Value::OutFluent is unsafe.
                 let Value::OutFluent(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
                 let outfluent = outfluent_ref.clone();
+                
+                println!("outfluent {}", outfluent);
                 let influent = InFluent {
                     params: outfluent.params,
                     ret: outfluent.ret,
@@ -101,9 +107,10 @@ impl Flamingo {
             .unwrap();
         // This contains the new stable state.
         let mut influent_delta = self.hddlog.transaction_commit_dump_changes().unwrap();
+        
         // Map each item to a (Output_Value, isize). The isize is either +1 or -1, where +1 means insertion
         // and -1 means deletion
-        action_delta
+        influent_delta
             .get_rel(Relations::Output as RelId)
             .into_iter()
             .map(|(val, op)| unsafe {
@@ -123,51 +130,14 @@ impl Flamingo {
 declare_types! {
     pub class JsFlamingo for Flamingo {
         init(mut cx) {
-          let id = cx.argument::<JsNumber>(0)?;
-          let first_name: Handle<JsString> = cx.argument::<JsString>(1)?;
-          let last_name: Handle<JsString> = cx.argument::<JsString>(2)?;
-          let email: Handle<JsString> = cx.argument::<JsString>(3)?;
-
           fn cb(_rel: usize, _rec: &Record, _w: isize) {}
           let mut hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
 
           Ok(Flamingo {
-            id: id.value() as i32,
-            first_name: first_name.value(),
-            last_name: last_name.value(),
-            email: email.value(),
             hddlog,
           })
         }
     
-        method getNewObject(mut cx) {
-            let attrs = vec![
-                Attribute {
-                    oid: 1,
-                    val: AttributeValue::Attr_Target {target_1: 100}
-                },
-                Attribute {
-                    oid: 1,
-                    val: AttributeValue::Attr_Magnitude {magnitude_1: Axes::X, magnitude_ret: 100}
-                },
-                Attribute {
-                    oid: 1,
-                    val: AttributeValue::Attr_Magnitude {magnitude_1: Axes::Y, magnitude_ret: 100}
-                },
-            ];
-            let attrs_std_Vec = std_Vec::from(attrs);
-            let foo: NewObject = NewObject {
-                attributes: attrs_std_Vec,
-                object: types::Object {
-                    oid: 1,
-                    sort: Node::Windows
-                }
-            };
-
-            let js_value = neon_serde::to_value(&mut cx, &foo)?;
-            Ok(js_value)
-        }
-
         method add(mut cx) {
             let arg0 = cx.argument::<JsValue>(0)?;
             let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;

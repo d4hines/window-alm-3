@@ -1,11 +1,18 @@
 
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
+const { new_window, move, open_window, final_coordinate } = require("./convert");
+
 const { Flamingo } = require("../flamingo/lib");
 
 
-const flamingo = new Flamingo(0, "bob", "dylan", "bob@gmail.com");
-console.log(JSON.stringify(flamingo.getNewObject(), undefined, 2))
+const flamingo = new Flamingo();
+
+flamingo.add(new_window(1, 100, 100));
+let results = flamingo.dispatch(open_window(2, 1)).map(final_coordinate);
+
+console.log(JSON.stringify(results, undefined, 2));
+
 
 const WM_MOUSEMOVE = 0x200
 

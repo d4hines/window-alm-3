@@ -10,6 +10,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "build": "cd flamingo && electron-build-env neon build --release",
+    "clean": "cd flamingo && neon clean",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
   },
