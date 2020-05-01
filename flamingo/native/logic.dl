@@ -114,10 +114,10 @@ Output(Out_Snapped{snapped}) :- Snapped[snapped].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
-    20
+    50
 }
 function static_Snapping_Threshold(): s64 {
-    20
+    100
 }
 
 Opposite_Direction(DLeft, DRight).

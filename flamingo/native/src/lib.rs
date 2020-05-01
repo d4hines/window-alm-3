@@ -26,9 +26,17 @@ pub struct Flamingo {
 }
 
 fn new_object_to_cmd(new_object: NewObject, add: bool) -> Vec<Update<ddval::DDValue>> {
-    let obj = vec![Update::Insert {
-        relid: Relations::Object as RelId,
-        v: Value::Object(new_object.object).into_ddvalue(),
+    let obj_val = Value::Object(new_object.object).into_ddvalue();
+    let obj = vec![if add {
+        Update::Insert {
+            relid: Relations::Object as RelId,
+            v: obj_val,
+        }
+    } else {
+        Update::DeleteValue {
+            relid: Relations::Object as RelId,
+            v: obj_val,
+        }
     }];
     let attributes = new_object
         .attributes
@@ -98,15 +106,15 @@ impl Flamingo {
                 }
             })
             .collect();
-    
-        // let delete_action_cmds = new_object_to_cmd(action.clone(), false);
-        // let all_cmds = vec![outfluent_cmds, delete_action_cmds];
+
+        let delete_action_cmds = new_object_to_cmd(action.clone(), false);
+        let all_cmds = vec![outfluent_cmds, delete_action_cmds];
         // Transact the new InFluents
         self.hddlog.transaction_start().unwrap();
 
         self.hddlog
-            // .apply_valupdates(all_cmds.concat().into_iter())
-            .apply_valupdates(outfluent_cmds.into_iter())
+            .apply_valupdates(all_cmds.concat().into_iter())
+            // .apply_valupdates(outfluent_cmds.into_iter())
             .unwrap();
         // This contains the new stable state.
         let mut influent_delta = self.hddlog.transaction_commit_dump_changes().unwrap();

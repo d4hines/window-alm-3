@@ -1,0 +1,9 @@
+OutFluent:
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 1, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 200}}: -1
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 1, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 200}}: -1
+OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = true}}: -1
+Output:
+Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = X{}, ._3 = 0}}}: -1
+Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = X{}, ._3 = 200}}}: +1
+Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = Y{}, ._3 = 0}}}: -1
+Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = Y{}, ._3 = 200}}}: +1

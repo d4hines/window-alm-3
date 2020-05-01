@@ -115,7 +115,7 @@ insert_or_update InFluent(Param_Moving{3}, Value_Moving{true});
 delete Object(4, Move);
 delete Attribute(4, Attr_Target{3});
 delete Attribute(4, Attr_Magnitude{X, 200});
-commit;# dump_changes;
+commit; #dump_changes;
 
 # We came here for snapping, so let's snap! Windows will snap when they are moved
 # close enough together that the distance between them is lower than the snapping
@@ -140,6 +140,7 @@ delete Attribute(5, Attr_Target{3});
 delete Attribute(5, Attr_Magnitude{X, 90});
 commit;
 
-dump Final_Coordinate;
-# You should see that window 3's coordinates are (100, 0),
-# which is exactly what they should be!
+#dump Final_Coordinate;
+## You should see that window 3's coordinates are (100, 0),
+## which is exactly what they should be!
+#

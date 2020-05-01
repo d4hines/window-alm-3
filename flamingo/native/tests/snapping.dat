@@ -1,0 +1,48 @@
+# Initial State
+start;
+# Window 1 at (0,0), width 300, height 300
+insert Object(1, Windows);
+insert Attribute(1, Attr_Width{300});
+insert Attribute(1, Attr_Height{300});
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
+
+# Window 2 at (400,400), width 100, height 100
+insert Object(2, Windows);
+insert Attribute(2, Attr_Width{100});
+insert Attribute(2, Attr_Height{100});
+insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{400});
+insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{400});
+commit;
+
+start;
+insert Object(3, Move);
+insert Attribute(3, Attr_Target{2});
+insert Attribute(3, Attr_Magnitude{X, -50});
+insert Attribute(3, Attr_Magnitude{Y, -370});
+commit; #dump_changes;
+# Produces following changes:
+# OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 350}}: +1
+# OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 30}}: +1
+# OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = false}}: +1
+# OutFluent{.params = Param_Moving{.moving_1 = 2}, .ret = Value_Moving{.moving_ret = true}}: +1
+
+start;
+insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{310});
+insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{10});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{false});
+insert_or_update InFluent(Param_Moving{2}, Value_Moving{true});
+
+delete Object(3, Move);
+delete Attribute(3, Attr_Target{2});
+delete Attribute(3, Attr_Magnitude{X, -50});
+delete Attribute(3, Attr_Magnitude{Y, -370});
+commit;# dump_changes;
+
+dump Output;
+# Produces the following changes:
+# Final_Coordinate{._1 = 1, ._2 = X{}, ._3 = 0}
+# Final_Coordinate{._1 = 1, ._2 = Y{}, ._3 = 0}
+# Final_Coordinate{._1 = 2, ._2 = X{}, ._3 = 300}
+# Final_Coordinate{._1 = 2, ._2 = Y{}, ._3 = 0}
+#

@@ -9,14 +9,10 @@ const WM_MOUSEMOVE = 0x200
 // Instantiate a new Flamingo domain.
 const flamingo = new Flamingo();
 
-// flamingo.add(new_window(1, 100, 100));
-// flamingo.dispatch(open_window(2, 2));
-// flamingo.dispatch(move(3, 1, 150, 70));
-
 const oidToBrowserWindowID = new Map();
 // This is a counter that helps ensure we don't have
 // collisions in our object ids.
-let nextOID = 100;
+let nextOID = 0;
 
 const createWindow = () => {
   const width = 800;
@@ -53,7 +49,6 @@ const createWindow = () => {
       const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
       oldMouseX = newMouseX;
       oldMouseY = newMouseY;
-      console.log("diff", xDiff, yDiff);
       const moveOID = nextOID++;
       const results = flamingo.dispatch(move(moveOID, windowOID, xDiff, yDiff))
         .map(parse_result)
@@ -64,20 +59,18 @@ const createWindow = () => {
       results
         .forEach(({ value: [target, axis, coord] }) => {
           const browserID = oidToBrowserWindowID.get(target);
-          console.log("new", axis, coord);
           const browserWindow = BrowserWindow.fromId(browserID);
-          const { x, y } = browserWindow.getBounds();
-          // console.log("Current x,y", x, y);
-          // console.log("Axis, ")
           browserWindow.setBounds({ [axis.toLowerCase()]: coord });
         });
-    }), 16);
+    }), 32);
   });
 
   ipcMain.on("dragEnd", () => {
-    console.log("Drag Ended!");
     win.unhookWindowMessage(WM_MOUSEMOVE);
   });
 };
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow();
+  createWindow();
+});
