@@ -1,0 +1,50 @@
+start;
+insert Object(1, Windows);
+insert Attribute(1, Attr_Width{100});
+insert Attribute(1, Attr_Height{100});
+commit dump_changes;
+
+start;
+insert Object(2, Open_Window);
+insert Attribute(2, Attr_Target{1});
+commit dump_changes;
+
+start;
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
+delete Object(2, Open_Window);
+delete Attribute(2, Attr_Target{1});
+commit dump_changes;
+
+start;
+insert Object(3, Windows);
+insert Attribute(3, Attr_Width{100});
+insert Attribute(3, Attr_Height{100});
+commit;
+
+start;
+insert Object(4, Open_Window);
+insert Attribute(4, Attr_Target{3});
+commit dump_changes;
+
+start;
+insert_or_update InFluent(Param_Coordinate{3, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{3, Y}, Value_Coordinate{0});
+delete Object(4, Open_Window);
+delete Attribute(4, Attr_Target{3});
+commit dump_changes;
+
+start;
+insert Object(4, Move);
+insert Attribute(4, Attr_Target{3});
+insert Attribute(4, Attr_Magnitude{X, 200});
+commit dump_changes;
+
+start;
+insert_or_update InFluent(Param_Coordinate{3, X}, Value_Coordinate{200});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{false});
+insert_or_update InFluent(Param_Moving{3}, Value_Moving{true});
+delete Object(4, Move);
+delete Attribute(4, Attr_Target{3});
+delete Attribute(4, Attr_Magnitude{X, 200});
+commit dump_changes;

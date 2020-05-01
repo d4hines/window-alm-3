@@ -33,6 +33,12 @@ primary key (x) x.params
 
 output relation OutFluent(params: FluentParam, ret: FluentValue)
 
+// Bundle of object and attributes for use in Rust
+typedef NewObject = NewObject {
+    object: Object,
+    attributes: Vec<Attribute>
+}
+
 //////////// Dynamic Part of Lib ///////////////////
 ////////////////////////////////////////////////////
 
@@ -96,6 +102,10 @@ output relation Not_Closest(_1: OID, _2: OID)
 output relation Closest(_1: OID, _2: OID)
 output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+
+// Bundle of all the output fluents
+typedef Output = Out_Final_Cooridinate{final_coordinate: Final_Coordinate}
+    | Out_Snapped{snapped: Snapped}
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {

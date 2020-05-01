@@ -34,7 +34,7 @@ module Window_demo
             Not_Final_Coordinate : Windows x Axes x Integers -> Booleans
             output Final_Coordinate : Windows x Axes x Integers -> Booleans
             Not_Snapped : Windows x Rectangles -> Booleans
-            Snapped : Windows x Rectangles -> Booleans
+            output Snapped : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
             Predistance : Windows x Rectanglest x Integers -> Booleans
             Not_Distance : Windows x Rectangles x Integers -> Booleans
