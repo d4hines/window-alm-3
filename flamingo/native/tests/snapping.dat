@@ -13,14 +13,15 @@ insert Attribute(2, Attr_Width{100});
 insert Attribute(2, Attr_Height{100});
 insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{400});
 insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{400});
-commit;
+commit dump;
+
 
 start;
 insert Object(3, Move);
 insert Attribute(3, Attr_Target{2});
 insert Attribute(3, Attr_Magnitude{X, -50});
 insert Attribute(3, Attr_Magnitude{Y, -370});
-commit; #dump_changes;
+commit dump_changes;
 # Produces following changes:
 # OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 350}}: +1
 # OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 30}}: +1

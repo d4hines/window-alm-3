@@ -1,6 +1,0 @@
-Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = X{}, ._3 = 0}}}
-Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 1, ._2 = Y{}, ._3 = 0}}}
-Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 2, ._2 = X{}, ._3 = 300}}}
-Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 2, ._2 = Y{}, ._3 = 0}}}
-Output{.val = Out_Final_Coordinate{.final_coordinate = Final_Coordinate{._1 = 2, ._2 = Y{}, ._3 = 200}}}
-Output{.val = Out_Snapped{.snapped = Snapped{._1 = 2, ._2 = 1}}}
