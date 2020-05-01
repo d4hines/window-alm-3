@@ -25,8 +25,7 @@ pub struct Flamingo {
     hddlog: HDDlog,
 }
 
-fn new_object_to_cmd(new_object: NewObject) -> Vec<Update<ddval::DDValue>> {
-    println!("New Object: {}", new_object);
+fn new_object_to_cmd(new_object: NewObject, add: bool) -> Vec<Update<ddval::DDValue>> {
     let obj = vec![Update::Insert {
         relid: Relations::Object as RelId,
         v: Value::Object(new_object.object).into_ddvalue(),
@@ -34,9 +33,18 @@ fn new_object_to_cmd(new_object: NewObject) -> Vec<Update<ddval::DDValue>> {
     let attributes = new_object
         .attributes
         .iter()
-        .map(|a| Update::Insert {
-            relid: Relations::Attribute as RelId,
-            v: Value::Attribute(a.clone()).into_ddvalue(),
+        .map(|a| {
+            if add {
+                Update::Insert {
+                    relid: Relations::Attribute as RelId,
+                    v: Value::Attribute(a.clone()).into_ddvalue(),
+                }
+            } else {
+                Update::DeleteValue {
+                    relid: Relations::Attribute as RelId,
+                    v: Value::Attribute(a.clone()).into_ddvalue(),
+                }
+            }
         })
         .collect();
 
@@ -54,21 +62,15 @@ struct StateChange {
 
 impl Flamingo {
     fn add(&self, new_object: NewObject) {
-        let cmds = new_object_to_cmd(new_object);
+        let cmds = new_object_to_cmd(new_object, true);
         self.hddlog.transaction_start().unwrap();
         self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
-        let mut delta = self.hddlog.transaction_commit_dump_changes().unwrap();
-        let instances = delta.get_rel(Relations::Instance as RelId);
-
-        instances.into_iter().for_each(|(i,_)| unsafe {
-            let Value::Instance(instance) = DDValConvert::from_ddvalue_ref(i);
-            println!("{}", instance);
-        });
+        self.hddlog.transaction_commit().unwrap();
     }
 
     fn dispatch(&self, action: NewObject) -> Vec<StateChange> {
         ///////////// Phase 1: Add Action //////////////////
-        let action_cmds = new_object_to_cmd(action);
+        let action_cmds = new_object_to_cmd(action.clone(), true);
         self.hddlog.transaction_start().unwrap();
         self.hddlog
             .apply_valupdates(action_cmds.into_iter())
@@ -77,7 +79,6 @@ impl Flamingo {
         //////////////// Phase 2: Stabilize New State ////////////////
         // Extract the OutFluents returned from the action transaction.
         let outfluents = action_delta.get_rel(Relations::OutFluent as RelId);
-        println!("outfluents length {}", outfluents.len());
         // Map each of them into InFluents
         let outfluent_cmds: Vec<Update<ddval::DDValue>> = outfluents
             .into_iter()
@@ -85,8 +86,7 @@ impl Flamingo {
                 // The call to Value::OutFluent is unsafe.
                 let Value::OutFluent(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
                 let outfluent = outfluent_ref.clone();
-                
-                println!("outfluent {}", outfluent);
+
                 let influent = InFluent {
                     params: outfluent.params,
                     ret: outfluent.ret,
@@ -98,16 +98,19 @@ impl Flamingo {
                 }
             })
             .collect();
-            
+    
+        // let delete_action_cmds = new_object_to_cmd(action.clone(), false);
+        // let all_cmds = vec![outfluent_cmds, delete_action_cmds];
         // Transact the new InFluents
         self.hddlog.transaction_start().unwrap();
-        
+
         self.hddlog
+            // .apply_valupdates(all_cmds.concat().into_iter())
             .apply_valupdates(outfluent_cmds.into_iter())
             .unwrap();
         // This contains the new stable state.
         let mut influent_delta = self.hddlog.transaction_commit_dump_changes().unwrap();
-        
+
         // Map each item to a (Output_Value, isize). The isize is either +1 or -1, where +1 means insertion
         // and -1 means deletion
         influent_delta
@@ -137,7 +140,7 @@ declare_types! {
             hddlog,
           })
         }
-    
+
         method add(mut cx) {
             let arg0 = cx.argument::<JsValue>(0)?;
             let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;

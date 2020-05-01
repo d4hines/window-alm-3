@@ -2,19 +2,35 @@ start;
 insert Object(1, Windows);
 insert Attribute(1, Attr_Width{100});
 insert Attribute(1, Attr_Height{100});
-commit dump_changes;
+commit;
 
 start;
 insert Object(2, Open_Window);
 insert Attribute(2, Attr_Target{1});
+commit;
+ 
+start;
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
+delete Object(2, Open_Window);
+delete Attribute(2, Attr_Target{1});
+commit;
+
+start;
+insert Object(4, Move);
+insert Attribute(4, Attr_Target{1});
+insert Attribute(4, Attr_Magnitude{X, 200});
+insert Attribute(4, Attr_Magnitude{Y, 200});
+commit;
+
+start;
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{200});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{200});
+delete Object(4, Move);
+delete Attribute(4, Attr_Target{1});
+delete Attribute(4, Attr_Magnitude{X, 200});
+delete Attribute(4, Attr_Magnitude{Y, 200});
 commit dump_changes;
-# 
-# start;
-# insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
-# insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
-# delete Object(2, Open_Window);
-# delete Attribute(2, Attr_Target{1});
-# commit dump_changes;
 
 #start;
 #insert Object(3, Windows);

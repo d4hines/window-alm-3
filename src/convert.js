@@ -63,7 +63,7 @@ const move = (oid, target, x, y) => ({
             }
         },
         {
-            "oid": 1,
+            "oid": oid,
             "val": {
                 "Attr_Magnitude": {
                     "magnitude_1": "Y",
@@ -73,23 +73,19 @@ const move = (oid, target, x, y) => ({
         }
     ]
 });
-// const parse_result = ({ val, op }) => {
 
-//     switch ()
-// }
-const final_coordinate = ({ val: {
-    Out_Final_Coordinate: {
-        final_coordinate: {
-            _1,
-            _2,
-            _3
-        }
-    }
-}, op }) => ([[_1, _2, _3], op]);
+const parse_result = ({ val, op }) => {
+    const type = Object.keys(val)[0];
+    const value = Object
+        .keys(val[type])
+        .sort()
+        .map(x => val[type][x]);
+    return { type, value, op };
+}
 
 module.exports = {
     new_window,
     open_window,
     move,
-    final_coordinate
+    parse_result
 };

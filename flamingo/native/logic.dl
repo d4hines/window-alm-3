@@ -16,13 +16,13 @@ input relation Object(oid: OID, sort: Node)
 primary key (x) x.oid
 
 // Links together nodes in the sort hiearchy
-output relation Link(_1: Node, _2: Node)
+relation Link(_1: Node, _2: Node)
 Link(Actions, Universe).
 
-output relation Is_A(_1: OID, _2: Node)
+relation Is_A(_1: OID, _2: Node)
 Is_A(obj, sort) :- Object(obj, sort).
 
-output relation Instance(_1: OID, _2: Node)
+relation Instance(_1: OID, _2: Node)
 Instance(obj, sort) :- Is_A(obj, sort).
 Instance(obj, sort1) :- Instance(obj, sort2), Link(sort2, sort1).
 
@@ -84,26 +84,27 @@ typedef FluentValue = Value_Coordinate{coordinate_ret: s64 }
     | Value_Moving{moving_ret: bool}
 
 // Defined
-output relation Side(_1: OID, _2: Directions, _3: s64)
-output relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
-output relation Overlaps(_1: OID, _2: OID)
-output relation Attracts(_1: OID, _2: OID, _3: Directions)
-output relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
-output relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
-output relation Not_Snapped(_1: OID, _2: OID)
-output relation Snapped(_1: OID, _2: OID)
-output relation Not_Snapped_To_Corner(_1: OID, _2: OID)
-output relation Snapped_To_Corner(_1: OID, _2: OID)
-output relation Stationary(_1: OID)
-output relation Predistance(_1: OID, _2: OID, _3: s64, _4: Directions)
-output relation Not_Distance(_1: OID, _2: OID, _3: s64)
-output relation Distance(_1: OID, _2: OID, _3: s64)
-output relation Not_Closest(_1: OID, _2: OID)
-output relation Closest(_1: OID, _2: OID)
-output relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
-output relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+relation Side(_1: OID, _2: Directions, _3: s64)
+relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
+relation Overlaps(_1: OID, _2: OID)
+relation Attracts(_1: OID, _2: OID, _3: Directions)
+relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+relation Not_Snapped(_1: OID, _2: OID)
+relation Snapped(_1: OID, _2: OID)
+relation Not_Snapped_To_Corner(_1: OID, _2: OID)
+relation Snapped_To_Corner(_1: OID, _2: OID)
+relation Stationary(_1: OID)
+relation Predistance(_1: OID, _2: OID, _3: s64, _4: Directions)
+relation Not_Distance(_1: OID, _2: OID, _3: s64)
+relation Distance(_1: OID, _2: OID, _3: s64)
+relation Not_Closest(_1: OID, _2: OID)
+relation Closest(_1: OID, _2: OID)
+relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
+relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 
 // Bundle of all the output fluents
+#[rust="serde(untagged)"]
 typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
     | Out_Snapped{snapped: Snapped}
 

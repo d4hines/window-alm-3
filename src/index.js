@@ -1,55 +1,83 @@
-
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
-const { new_window, move, open_window, final_coordinate } = require("./convert");
-
+const { debounce } = require("lodash");
+const { new_window, move, open_window, parse_result } = require("./convert");
 const { Flamingo } = require("../flamingo/lib");
-
-
-const flamingo = new Flamingo();
-
-flamingo.add(new_window(1, 100, 100));
-let results = flamingo.dispatch(open_window(2, 1)).map(final_coordinate);
-
-console.log(JSON.stringify(results, undefined, 2));
-
 
 const WM_MOUSEMOVE = 0x200
 
+// Instantiate a new Flamingo domain.
+const flamingo = new Flamingo();
+
+// flamingo.add(new_window(1, 100, 100));
+// flamingo.dispatch(open_window(2, 2));
+// flamingo.dispatch(move(3, 1, 150, 70));
+
+const oidToBrowserWindowID = new Map();
+// This is a counter that helps ensure we don't have
+// collisions in our object ids.
+let nextOID = 100;
+
 const createWindow = () => {
+  const width = 800;
+  const height = 600;
+
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+  const win = new BrowserWindow({
+    width,
+    height,
+    x: 0,
+    y: 0,
     frame: false,
     webPreferences: {
       nodeIntegration: true
     }
   });
-
   // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  win.loadFile(path.join(__dirname, 'index.html'));
 
-  // ipcMain.on("dragStart", () => {
-  //   const { x: oldMouseX, y: oldMouseY } = screen.getCursorScreenPoint();
-  //   const { x: oldWindowX, y: oldWindowY, width, height } = mainWindow.getBounds();
-  //   mainWindow.hookWindowMessage(WM_MOUSEMOVE, () => {
-  //     const { x: newMouseX, y: newMouseY } = screen.getCursorScreenPoint();
-  //     const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
-  //     const [newWindowX, newWindowY, color, js_x, js_y, js_color] = hello(xDiff, yDiff, oldWindowX, oldWindowY, width, height);
+  const windowOID = nextOID++;
+  oidToBrowserWindowID.set(windowOID, win.id);
 
-  //     mainWindow.setBounds({
-  //       x: js_x,
-  //       y: js_y
-  //     });
-  //     mainWindow.webContents.send("color", js_color.toLowerCase().includes("red") ? "red" : "blue");
-  //   });
-  // });
+  // Add the window to the Flamingo domain.
+  flamingo.add(new_window(windowOID, width, height));
 
-  // ipcMain.on("dragEnd", () => {
-  //   console.log("Drag Ended!");
-  //   mainWindow.unhookWindowMessage(WM_MOUSEMOVE);
-  // });
+  // Dispatch an Open_Window action to initialize it.
+  const openOID = nextOID++;
+  flamingo.dispatch(open_window(openOID, windowOID));
+
+  ipcMain.on("dragStart", () => {
+    let { x: oldMouseX, y: oldMouseY } = screen.getCursorScreenPoint();
+    win.hookWindowMessage(WM_MOUSEMOVE, debounce(() => {
+      const { x: newMouseX, y: newMouseY } = screen.getCursorScreenPoint();
+      const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
+      oldMouseX = newMouseX;
+      oldMouseY = newMouseY;
+      console.log("diff", xDiff, yDiff);
+      const moveOID = nextOID++;
+      const results = flamingo.dispatch(move(moveOID, windowOID, xDiff, yDiff))
+        .map(parse_result)
+        .filter(({ type, op }) => type === "final_coordinate" && op === 1);
+      // In a real app, this would be somewhere else, as part
+      // of a dedicated "effects" module. Notice that it doesn't
+      // rely on any closures in the above scope.
+      results
+        .forEach(({ value: [target, axis, coord] }) => {
+          const browserID = oidToBrowserWindowID.get(target);
+          console.log("new", axis, coord);
+          const browserWindow = BrowserWindow.fromId(browserID);
+          const { x, y } = browserWindow.getBounds();
+          // console.log("Current x,y", x, y);
+          // console.log("Axis, ")
+          browserWindow.setBounds({ [axis.toLowerCase()]: coord });
+        });
+    }), 16);
+  });
+
+  ipcMain.on("dragEnd", () => {
+    console.log("Drag Ended!");
+    win.unhookWindowMessage(WM_MOUSEMOVE);
+  });
 };
 
 app.on('ready', createWindow);
