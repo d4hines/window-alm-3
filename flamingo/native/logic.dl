@@ -289,16 +289,16 @@ Not_Snapped_To_Corner(3, 1) :-
     Opposite_Direction(dir__prime, opposite_dir),
     Nearest_Corner(3, 1, opposite_dir, _).
 
-//Snapped_To_Corner(a, b) :-
-//    Snapped(a, b),
-//    Nearest_Side(a, b, dir),
-//    Axis(dir, ax),
-//    Opposite_Axis(ax, ax__prime),
-//    Nearest_Corner(a, b, dir, dir__prime),
-//    Side(a, dir__prime, side_a),
-//    Side(b, dir__prime, side_b),
-//    abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
-//    not Not_Snapped_To_Corner(a, b).
+Snapped_To_Corner(a, b) :-
+    Snapped(a, b),
+    Nearest_Side(a, b, dir),
+    Axis(dir, ax),
+    Opposite_Axis(ax, ax__prime),
+    Nearest_Corner(a, b, dir, dir__prime),
+    Side(a, dir__prime, side_a),
+    Side(b, dir__prime, side_b),
+    abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
+    not Not_Snapped_To_Corner(a, b).
 
  Final_Coordinate(a, ax, new_coord) :-
     Snapped(a, b),
@@ -309,17 +309,17 @@ Not_Snapped_To_Corner(3, 1) :-
     Direction_Factor(dir, f),
     var new_coord = coord + d * f.
 
-//Final_Coordinate(a, ax__prime, new_coord) :-
-//   Snapped(a, b),
-//   Snapped_To_Corner(a, b),
-//   Nearest_Side(a, b, dir),
-//   Axis(dir, ax),
-//   Opposite_Axis(ax, ax__prime),
-//   Nearest_Corner(a, b, dir, dir__prime),
-//   InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}),
-//   Side(a, dir__prime, side_a),
-//   Side(b, dir__prime, side_b),
-//   var new_coord = coord + (side_b - side_a).
+Final_Coordinate(a, ax__prime, new_coord) :-
+   Snapped(a, b),
+   Snapped_To_Corner(a, b),
+   Nearest_Side(a, b, dir),
+   Axis(dir, ax),
+   Opposite_Axis(ax, ax__prime),
+   Nearest_Corner(a, b, dir, dir__prime),
+   InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}),
+   Side(a, dir__prime, side_a),
+   Side(b, dir__prime, side_b),
+   var new_coord = coord + (side_b - side_a).
 
 Final_Coordinate(a, ax__prime, coord) :-
     Snapped(a, b),

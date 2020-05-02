@@ -28,6 +28,29 @@ describe('Window Motion', () => {
   beforeEach(() => {
     // This spins up a new Flamingo database (in memory)
     flamingo = new Flamingo();
+
+    // Flamingo.dispatch is how we send actions to Flamingo database.
+    // Using the awful power of Javascript prototypes, we patch Flamingo.dispatch
+    // to throw an error if it ever returns more than one final coordinate
+    // for a given window, which would mean there's an error in the logic somewhere.
+    // Eventually Flamingo will detect these kinds of mistakes at itself compile-time,
+    // but for now it needs the extra help.
+    const dispatch = Flamingo.prototype.dispatch;
+    flamingo.dispatch = (...args) => {
+      const results = dispatch.apply(flamingo, args);
+      // Narrow the results to just the insertions of final_coordinates
+      const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
+      for (const { value: [ id, axis ]} of insertions) {
+        // For each final_coordinate, look for others with the same window and axis.
+        const others = insertions
+          .filter(({ value: [otherID, otherAxis] }) => otherID === id && otherAxis === axis);
+        // If we find more than 1, there's a problem.
+        if (others.length > 1) {
+          throw new Error(`Found multiple coordinates for window ${id} on axis ${axis}`)
+        }
+      }
+      return results;
+    }
   });
 
   afterEach(() => {
@@ -39,7 +62,7 @@ describe('Window Motion', () => {
     it("Should initialize their coordinates to (0, 0)", () => {
 
       // Opening a window happens in two phases: first, you have
-      // to add the windwo to the database (see below); then,
+      // to add the window to the database (see below); then,
       // you have to dispatch a "open" action targeting that window.
 
       // Before you can dispatch actions that target an object,
@@ -176,7 +199,7 @@ describe('Window Motion', () => {
         snapped(2, 1)
       ]);
     });
-    it('Should snap bottom', function () {
+    it('Should snap top', function () {
       // Same routine as before, except this time we'll
       // move 2 to (100, 319), so it will snap top
       // to (100, 300)
@@ -202,6 +225,68 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 100),
+        finalCoordinate(2, "Y", 300),
+        snapped(2, 1)
+      ]);
+    });
+  });
+
+  describe('Window corner snapping', () => {
+    // We'll work with the same two windows to test corner snapping
+    beforeEach(() => {
+      // Add window 1 to the domain, with width and height 300
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 1, width: 300, height: 300 }
+      });
+
+      // Add window 2 to the domain, with width and height 100
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+
+      // Open both windows, which initializes their coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 3, target: 1 },
+      });
+      
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+    });
+
+    it('Should snap to the bottom left corner', function () {
+      // We're going to start with both at (0,0).
+      // We'll move 2 to (10, 319), and it will snap
+      // to 1 at (0, 300)
+      //   0                    0
+      //   +-----------+        +-----------+
+      // 0 |           |      0 |           |
+      //   |           |        |           |
+      //   |    1      |        |    1      |
+      //   |           |        |           |
+      //   |           |  +---> |           |
+      //   |           |        |           |
+      //   +--319------+        +-----+-----+ 300
+      //    +-----+             | 2   |
+      //    | 2   |           10|     |
+      //  10|     |             +-----+
+      //    +-----+
+    
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 319 },
+      });
+      for (const {type, value, op} of results) {
+        console.log(type, value, op);
+      }
+      
+      // We ignore the deletions by using .include instead of .have
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 0),
         finalCoordinate(2, "Y", 300),
         snapped(2, 1)
       ]);
