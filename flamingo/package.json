@@ -12,7 +12,7 @@
   "scripts": {
     "install": "electron-build-env neon build --release",
     "build": "ddlog -i ./native/logic.dl -L $DDLOG_LIB",
-    "test": "yarn build && cd ./native/logic_ddlog && cargo build --release && yarn cli",
-    "cli": "./native/logic_ddlog/target/release/logic_cli < ./native/logic.dat"
+    "test": "bash build_and_test.sh",
+    "test:watch": "cd native && watchexec --exts dl,dat ./build_and_test.sh"
   }
 }
