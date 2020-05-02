@@ -172,14 +172,14 @@ Overlaps(a, b) :-
     On_Same_Line(a, b, X),
     On_Same_Line(a, b, Y).
 
-Predistance(1, b, d, dir) :-
-    Instance(1, Windows),
+Predistance(a, b, d, dir) :-
+    Instance(a, Windows),
     Instance(b, Windows),
-    not Overlaps(1, b),
-    On_Same_Line(1, b, axis),
+    not Overlaps(a, b),
+    On_Same_Line(a, b, axis),
     Opposite_Axis(axis, axis__prime),
     Axis(dir, axis__prime),
-    Side(1, dir, e1),
+    Side(a, dir, e1),
     Side(b, dir__prime, e2),
     Opposite_Direction(dir, dir__prime),
     var d = abs(e1 - e2).

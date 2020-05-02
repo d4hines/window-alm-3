@@ -179,6 +179,7 @@ describe('Window Motion', () => {
       //   snapped(2, 1)
       // ]);
 
+
       throw new Error("broken");
     });
   });
