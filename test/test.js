@@ -112,6 +112,10 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
       });
+      for (const {type, value, op} of results) {
+        console.log(type, value, op);
+      }
+      
       // We ignore the deletions by using .include instead of .have
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 300),
@@ -138,7 +142,9 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: -110, magnitude_y: 100 },
       });
-  
+      for (const {type, value, op} of results) {
+        console.log(type, value, op);
+      }
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", -100),
         finalCoordinate(2, "Y", 100),
@@ -173,13 +179,11 @@ describe('Window Motion', () => {
       for (const {type, value, op} of results) {
         console.log(type, value);
       }
-      // expect(results).to.include.deep.members([
-      //   finalCoordinate(2, "X", 290),
-      //   finalCoordinate(2, "Y", -100),
-      //   snapped(2, 1)
-      // ]);
-
-      throw new Error("broken");
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 290),
+        finalCoordinate(2, "Y", -100),
+        snapped(2, 1)
+      ]);
     });
   });
 });
