@@ -23,7 +23,6 @@ const parse_new_object = ({ type, payload }) => {
 }
 
 const parse_result = ({ val, op }) => {
-    console.log('foo');
     const type = Object.keys(val)[0];
     const value = Object
         .keys(val[type])

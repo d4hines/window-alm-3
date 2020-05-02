@@ -14,6 +14,12 @@ const finalCoordinate = (windowID, axis, coord) => ({
   op: 1
 });
 
+const snapped = (a, b) => ({
+  op: 1,
+  type: "snapped",
+  value: [a, b]
+});
+
 describe('Window Motion', () => {
   let flamingo;
 
@@ -28,7 +34,7 @@ describe('Window Motion', () => {
   });
 
   describe("Opening a Window", () => {
-    it.only("Should initialize their coordinates to (0, 0)", () => {
+    it("Should initialize their coordinates to (0, 0)", () => {
 
       // Opening a window happens in two phases: first, you have
       // to add the windwo to the database (see below); then,
@@ -58,53 +64,61 @@ describe('Window Motion', () => {
     });
   });
 
-  // describe('Window snapping', () => {
-  //   // We're going to be working with two windows, 1 and 2
-  //   // We'll open them both,
-  //   beforeEach(() => {
-  //     // Add window 1 to the domain, with width and height 300
-  //     flamingo.add(fsaToFlamingo({
-  //       type: "add/window",
-  //       payload: { oid: 1, width: 300, height: 300 }
-  //     }));
+  describe('Window snapping', () => {
+    // We're going to be working with two windows, 1 and 2
+    // We'll open them both,
+    beforeEach(() => {
+      // Add window 1 to the domain, with width and height 300
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 1, width: 300, height: 300 }
+      });
 
-  //     // Add window 2 to the domain, with width and height 100
-  //     flamingo.add(fsaToFlamingo({
-  //       type: "add/window",
-  //       payload: { oid: 2, width: 100, height: 100 }
-  //     }));
+      // Add window 2 to the domain, with width and height 100
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
 
-  //     // Open both windows, which initializes their coords at (0, 0)
-  //     flamingo.dispatch(fsaToFlamingo({
-  //       type: "action/open",
-  //       payload: { oid: 3, target: 1 },
-  //     }));
+      // Open both windows, which initializes their coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 3, target: 1 },
+      });
       
-  //     flamingo.dispatch(fsaToFlamingo({
-  //       type: "action/open",
-  //       payload: { oid: 4, target: 2 },
-  //     }));
-  //   });
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+    });
 
-  //   it('Snap Left', function () {
-  //     // We're going to start with both at (0,0).
-  //     // We'll move 2 to (100, 310), and it will snap
-  //     // to (100, 300)
+    it('Snap Left', function () {
+      //throw new Error("foo");
+
+      // We're going to start with both at (0,0).
+      // We'll move 2 to (310, 100), and it will snap
+      // to 1 at (300, 100)
       
-  //     //   0                             0
-  //     //   +-----------+                 +-----------+
-  //     // 0 |           |   100         0 |           | 100
-  //     //   |    1      |  +---+          |   1       +----+
-  //     //   |           |  |310|   +--->  |           |300 |
-  //     //   |           |  +---+          |           +----+
-  //     //   |           |    2            |           |  2
-  //     //   +-----------+                 +-----------+
+      //   0                             0
+      //   +-----------+                 +-----------+
+      // 0 |           |   100         0 |           | 100
+      //   |    1      |  +---+          |   1       +----+
+      //   |           |  |310|   +--->  |           |300 |
+      //   |           |  +---+          |           +----+
+      //   |           |    2            |           |  2
+      //   +-----------+                 +-----------+
 
-  //     const results = flamingo.dispatch(fsaToFlamingo({
-  //       type: "action/open",
-  //       payload: { target: 2 },
-  //     }));
-
-  //   });
-  // });
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
+      });
+      // We ignore the deletions by using .include instead of .have
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 300),
+        finalCoordinate(2, "Y", 100),
+        snapped(2, 1)
+      ]);
+      console.log(JSON.stringify(results, undefined, 2));
+    });
+  });
 });
