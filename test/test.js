@@ -9,6 +9,8 @@ const finalCoordinate = (windowID, axis, coord) => ({
   type: "final_coordinate",
   // This tuple matches the ALM function signature: 
   // "Final_Coordinate : Windows x Axes -> Integers"
+  // Final_Coordinate tells us where the window is after
+  // applying special conditions like snapping.
   value: [windowID, axis, coord],
   // The 1 says this fact became true (-1 means it became false)
   op: 1
@@ -92,7 +94,7 @@ describe('Window Motion', () => {
       });
     });
 
-    it('Should snap Left', function () {
+    it('Should snap left', function () {
       // We're going to start with both at (0,0).
       // We'll move 2 to (310, 100), and it will snap
       // to 1 at (300, 100)
@@ -116,10 +118,9 @@ describe('Window Motion', () => {
         finalCoordinate(2, "Y", 100),
         snapped(2, 1)
       ]);
-      console.log(JSON.stringify(results, undefined, 2));
     });
 
-    it('Should snap Left', function () {
+    it('Should snap right', function () {
       // Same routine as before, except this time we'll
       // move 2 to (-110, 100), so it will snap left
       // to (-100, 100)
@@ -143,6 +144,42 @@ describe('Window Motion', () => {
         finalCoordinate(2, "Y", 100),
         snapped(2, 1)
       ]);
+    });
+
+    it('Should snap bottom', function () {
+      // Same routine as before, except this time we'll
+      // move 2 to (290, -110), so it will snap bottom
+      // to (-100, 100)
+
+      //           -110
+      //          +-------+             -100
+      //          |       |            +-------+
+      //       290|  2    |            |       |
+      //          |       |         290|  2    |
+      //  0       +-------+    0       |       |
+      //  +-----------+        +-------+---+---+
+      //  |           |        |           |
+      //0 |           |      0 |           |
+      //  |    1      |        |    1      |
+      //  |           |  +---> |           |
+      //  |           |        |           |
+      //  |           |        |           |
+      //  +-----------+        +-----------+
+      
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 290, magnitude_y: -110 },
+      });
+      for (const {type, value, op} of results) {
+        console.log(type, value);
+      }
+      // expect(results).to.include.deep.members([
+      //   finalCoordinate(2, "X", 290),
+      //   finalCoordinate(2, "Y", -100),
+      //   snapped(2, 1)
+      // ]);
+
+      throw new Error("broken");
     });
   });
 });
