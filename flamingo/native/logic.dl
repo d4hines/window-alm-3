@@ -240,28 +240,6 @@ OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Attribute(action, Attr_Target{a}).
 
-Nearest_Side(a, b, dir) :-
-    Instance(a, Windows),
-    Instance(b, Windows),
-    Side(a, dir, edge_a),
-    Opposite_Direction(dir, dir__prime),
-    Side(b, dir__prime, edge_b),
-    Distance(a, b, d),
-    edge_a - edge_b == d.
-
-Nearest_Side(w, m, dir) :-
-    Instance(w, Windows),
-    Instance(m, Monitors),
-    Side(w, dir, edge_w),
-    Side(m, dir, edge_m),
-    Distance(w, m, d),
-    var d__prime = edge_w - edge_m,
-    d == d__prime.
-
-Nearest_Side(a, b, dir) :-
-    Opposite_Direction(dir, dir__prime),
-    Nearest_Side(b, a, dir__prime).
-
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Attribute(action, Attr_Target{window}),
@@ -369,7 +347,7 @@ Nearest_Side(a, b, dir) :-
     Opposite_Direction(dir, dir__prime),
     Side(b, dir__prime, edge_b),
     Distance(a, b, d),
-    edge_a - edge_a == d.
+    edge_a - edge_b == d.
 
 Nearest_Side(w, m, dir) :-
     Instance(w, Windows),
@@ -378,7 +356,7 @@ Nearest_Side(w, m, dir) :-
     Side(m, dir, edge_m),
     Distance(w, m, d),
     edge_w - edge_m == d.
-       
+ 
 Nearest_Side(a, b, dir) :-
     Opposite_Direction(dir, dir__prime),
     Nearest_Side(b, a, dir__prime).
