@@ -11,15 +11,15 @@ echo // Window 2 at (300, 30), width 100, height 100;
 insert Object(2, Windows);
 insert Attribute(2, Attr_Width{100});
 insert Attribute(2, Attr_Height{100});
-insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{400});
-insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{400});
+insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{300});
+insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{30});
 commit dump_changes;
 
-echo // Dispatch a Move action on window 2, 425 px left.;
+echo // Dispatch a Move action on window 2, 415 px left.;
 start;
 insert Object(3, Move);
 insert Attribute(3, Attr_Target{2});
-insert Attribute(3, Attr_Magnitude{X, -425});
+insert Attribute(3, Attr_Magnitude{X, -415});
 insert Attribute(3, Attr_Magnitude{Y, 0});
 commit dump_changes;
 

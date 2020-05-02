@@ -56,10 +56,12 @@ typedef Node = Universe
     | Open_Window
     | Move
 
+#[rust="serde(untagged)"]
 typedef AttributeValue = Attr_Width{width: s64}
-    | Attr_Height{height_1: s64} 
-    | Attr_Target{target_1: OID}
-    | Attr_Magnitude{magnitude_1: Axes, magnitude_ret: s64}
+    | Attr_Height{height: s64} 
+    | Attr_Target{target: OID}
+    | Attr_Magnitude_X{magnitude_x: s64}
+    | Attr_Magnitude_Y{magnitude_y: s64}
 
 // Encode Hiearchy facts
 Link(Window_Action, Actions).
@@ -256,11 +258,18 @@ Nearest_Side(a, b, dir) :-
     Opposite_Direction(dir, dir__prime),
     Nearest_Side(b, a, dir__prime).
 
-OutFluent(Param_Coordinate{window, axis}, Value_Coordinate{new_coord}) :-
+OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Attribute(action, Attr_Target{window}),
-    Attribute(action, Attr_Magnitude{axis, m}),
-    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
+    Attribute(action, Attr_Magnitude_X{m}),
+    InFluent(Param_Coordinate{window, X}, Value_Coordinate{coord}),
+    var new_coord = coord + m.
+    
+OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
+    Instance(action, Move),
+    Attribute(action, Attr_Target{window}),
+    Attribute(action, Attr_Magnitude_Y{m}),
+    InFluent(Param_Coordinate{window, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
@@ -295,6 +304,9 @@ Not_Snapped_To_Corner(3, 1) :-
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
     Opposite_Direction(dir__prime, opposite_dir),
     Nearest_Corner(3, 1, opposite_dir, _).
+
+Final_Coordinate(1, X, 0) :- InFluent(Param_Coordinate{1, X}, Value_Coordinate{0}).
+Final_Coordinate(1, Y, 0) :- InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0}).
 
 //Snapped_To_Corner(a, b) :-
 //    Snapped(a, b),

@@ -7,7 +7,7 @@ insert Attribute(1, Attr_Height{700});
 insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
 insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
 
-echo // Window 2 at (400,400), width 100, height 100;
+echo // Window 2 at (-100,30), width 100, height 100;
 insert Object(2, Windows);
 insert Attribute(2, Attr_Width{100});
 insert Attribute(2, Attr_Height{100});

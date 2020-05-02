@@ -1,16 +1,16 @@
 // Initial State
 // Window 1 at (0,0), width 300, height 300
 // Window 2 at (300, 30), width 100, height 100
-// Dispatch a Move action on window 2, 425 px left.
+// Dispatch a Move action on window 2, 415 px left.
 OutFluent:
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = -25}}: +1
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 400}}: +1
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = -115}}: +1
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 30}}: +1
 OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = false}}: +1
 OutFluent{.params = Param_Moving{.moving_1 = 2}, .ret = Value_Moving{.moving_ret = true}}: +1
 // Stabilize new state. This will cause window 2 to snap right to window 1
 OutFluent:
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = -25}}: -1
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 400}}: -1
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = -115}}: -1
+OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 30}}: -1
 OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = false}}: -1
 OutFluent{.params = Param_Moving{.moving_1 = 2}, .ret = Value_Moving{.moving_ret = true}}: -1
 Output:

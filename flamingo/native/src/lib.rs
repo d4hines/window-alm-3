@@ -13,9 +13,7 @@ use value::Value;
 // Neon imports
 use neon::prelude::*;
 
-#[macro_use]
 extern crate neon;
-#[macro_use]
 extern crate neon_serde;
 #[macro_use]
 extern crate serde_derive;
@@ -27,6 +25,7 @@ pub struct Flamingo {
 
 fn new_object_to_cmd(new_object: NewObject, add: bool) -> Vec<Update<ddval::DDValue>> {
     let obj_val = Value::Object(new_object.object).into_ddvalue();
+    
     let obj = vec![if add {
         Update::Insert {
             relid: Relations::Object as RelId,
@@ -70,6 +69,7 @@ struct StateChange {
 
 impl Flamingo {
     fn add(&self, new_object: NewObject) {
+        println!("Add, {}", new_object);
         let cmds = new_object_to_cmd(new_object, true);
         self.hddlog.transaction_start().unwrap();
         self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
@@ -99,6 +99,7 @@ impl Flamingo {
                     params: outfluent.params,
                     ret: outfluent.ret,
                 };
+                println!("Influent, {}", influent);
                 // We use InsertOrUpdate so as to avoid duplcating fluent values (fluents are functions)
                 Update::InsertOrUpdate {
                     relid: Relations::InFluent as RelId,
@@ -128,6 +129,7 @@ impl Flamingo {
                 // The call to Value::Output is unsafe.
                 let Value::Output(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
                 let output = outfluent_ref.clone();
+                println!("{}", output);
                 StateChange {
                     val: output.val,
                     op: *op,
@@ -136,13 +138,42 @@ impl Flamingo {
             .into_iter()
             .collect()
     }
+
+    fn stop(&mut self) {
+        self.hddlog.stop().unwrap();
+    }
 }
 
 declare_types! {
     pub class JsFlamingo for Flamingo {
-        init(mut cx) {
+        init(mut _cx) {
           fn cb(_rel: usize, _rec: &Record, _w: isize) {}
-          let mut hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
+          let hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
+        let attrs = vec![
+            Attribute {
+                oid: 1,
+                val: AttributeValue::Attr_Height {
+                    height: 100
+                }
+            },
+            Attribute {
+                oid: 1,
+                val: AttributeValue::Attr_Width {
+                    width: 100
+                }
+            }
+        ];
+        let attr_std = std_Vec::from(attrs);
+        let foo: NewObject = NewObject {
+            object: types::Object {
+                oid: 1,
+                sort: Node::Windows
+            },
+            attributes: attr_std
+        };
+
+        println!("foo, {}", foo);
+        println!("foo serial {}", serde_json::to_string(&foo).unwrap());
 
           Ok(Flamingo {
             hddlog,
@@ -159,13 +190,22 @@ declare_types! {
         }
 
         method dispatch(mut cx) {
+            println!("Dispatch");
             let arg0 = cx.argument::<JsValue>(0)?;
             let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;
+            println!("Dispatch conversion done");
             let this = cx.this();
             let guard = cx.lock();
             let results = this.borrow(&guard).dispatch(arg0_value);
             let js_value = neon_serde::to_value(&mut cx, &results)?;
             Ok(js_value)
+        }
+
+        method stop(mut cx) {
+            let mut this = cx.this();
+            let guard = cx.lock();
+            this.borrow_mut(&guard).stop();
+            Ok(cx.undefined().upcast())
         }
     }
 }
