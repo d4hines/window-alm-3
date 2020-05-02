@@ -1,8 +1,8 @@
 const { expect } = require('chai');
 const { Flamingo } = require("../flamingo/lib");
-const { new_window } = require("../src/convert");
 
-/**Utility function for generating Final_Coordinate data
+/**
+ * Utility function for generating Final_Coordinate data
  * which is returned by Flamingo after move actions.
 */
 const finalCoordinate = (windowID, axis, coord) => ({
@@ -92,9 +92,7 @@ describe('Window Motion', () => {
       });
     });
 
-    it('Snap Left', function () {
-      //throw new Error("foo");
-
+    it('Should snap Left', function () {
       // We're going to start with both at (0,0).
       // We'll move 2 to (310, 100), and it will snap
       // to 1 at (300, 100)
@@ -119,6 +117,32 @@ describe('Window Motion', () => {
         snapped(2, 1)
       ]);
       console.log(JSON.stringify(results, undefined, 2));
+    });
+
+    it('Should snap Left', function () {
+      // Same routine as before, except this time we'll
+      // move 2 to (-110, 100), so it will snap left
+      // to (-100, 100)
+      //                     0                                 0
+      //               +-----------+                     +-----------+
+      //      100      |           |            100    0 |           |
+      //    +-------+0 |           |             +-------+           |
+      //    |       |  |    1      |             |       |    1      |
+      //-110|  2    |  |           |  +--->  -100|  2    |           |
+      //    |       |  |           |             |       |           |
+      //    +-------+  |           |             +-------+           |
+      //               +-----------+                     +-----------+
+      //
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: -110, magnitude_y: 100 },
+      });
+  
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", -100),
+        finalCoordinate(2, "Y", 100),
+        snapped(2, 1)
+      ]);
     });
   });
 });
