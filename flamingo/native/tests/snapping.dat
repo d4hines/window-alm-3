@@ -23,7 +23,7 @@ insert Attribute(3, Attr_Magnitude{X, -90});
 insert Attribute(3, Attr_Magnitude{Y, -370});
 commit dump_changes;
 
-echo // Stabilize new state;
+echo // Stabilize new state. This will cause window 2 to snap left to window 1;
 start;
 insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{310});
 insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{30});
@@ -32,7 +32,48 @@ insert_or_update InFluent(Param_Moving{2}, Value_Moving{true});
 
 delete Object(3, Move);
 delete Attribute(3, Attr_Target{2});
-delete Attribute(3, Attr_Magnitude{X, -90});
-delete Attribute(3, Attr_Magnitude{Y, -370});
+delete Attribute(3, Attr_Magnitude{X, 415});
+delete Attribute(3, Attr_Magnitude{Y, 0});
 commit dump_changes;
 
+echo // Dispatch a Move action on window 2, 425 px left.;
+start;
+insert Object(4, Move);
+insert Attribute(4, Attr_Target{2});
+insert Attribute(4, Attr_Magnitude{X, -425});
+insert Attribute(4, Attr_Magnitude{Y, 0});
+commit dump_changes;
+
+echo // Stabilize new state. This will cause window 2 to snap right to window 1;
+start;
+insert_or_update InFluent(Param_Coordinate{2, X}, Value_Coordinate{-115});
+insert_or_update InFluent(Param_Coordinate{2, Y}, Value_Coordinate{30});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{false});
+insert_or_update InFluent(Param_Moving{2}, Value_Moving{true});
+
+delete Object(4, Move);
+delete Attribute(4, Attr_Target{2});
+delete Attribute(4, Attr_Magnitude{X, -425});
+delete Attribute(4, Attr_Magnitude{Y, 0});
+commit dump_changes;
+
+echo // Dispatch a Move action on window 1, 10 px left and 380 px up.;
+start;
+insert Object(5, Move);
+insert Attribute(5, Attr_Target{1});
+insert Attribute(5, Attr_Magnitude{X, -10});
+insert Attribute(5, Attr_Magnitude{Y, -380});
+commit dump_changes;
+
+echo // Stabilize new state. This will cause window 1 to snap down to window 2;
+start;
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{-10});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{-380});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{true});
+insert_or_update InFluent(Param_Moving{2}, Value_Moving{false});
+
+delete Object(5, Move);
+delete Attribute(5, Attr_Target{1});
+delete Attribute(5, Attr_Magnitude{X, -10});
+delete Attribute(5, Attr_Magnitude{Y, -380});
+#commit dump_changes;
