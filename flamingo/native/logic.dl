@@ -336,13 +336,13 @@ Final_Coordinate(a, ax__prime, coord) :-
     Opposite_Axis(ax, ax__prime),
     InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
 
- Not_Final_Coordinate(window, axis, coord) :-
-    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-    Snapped(window, other).
+// Not_Final_Coordinate(window, axis, coord) :-
+//    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
+//    Snapped(window, other).
 
-Final_Coordinate(window, axis, coord) :-
-    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-    not Not_Final_Coordinate(window, axis, coord).
+// Final_Coordinate(window, axis, coord) :-
+//    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
+//    not Not_Final_Coordinate(window, axis, coord).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
