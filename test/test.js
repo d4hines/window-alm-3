@@ -98,7 +98,6 @@ describe('Window Motion', () => {
       // We're going to start with both at (0,0).
       // We'll move 2 to (310, 100), and it will snap
       // to 1 at (300, 100)
-      
       //   0                             0
       //   +-----------+                 +-----------+
       // 0 |           |   100         0 |           | 100
@@ -112,9 +111,6 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
       });
-      for (const {type, value, op} of results) {
-        console.log(type, value, op);
-      }
       
       // We ignore the deletions by using .include instead of .have
       expect(results).to.include.deep.members([
@@ -142,9 +138,7 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: -110, magnitude_y: 100 },
       });
-      for (const {type, value, op} of results) {
-        console.log(type, value, op);
-      }
+    
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", -100),
         finalCoordinate(2, "Y", 100),
@@ -156,7 +150,6 @@ describe('Window Motion', () => {
       // Same routine as before, except this time we'll
       // move 2 to (290, -110), so it will snap bottom
       // to (-100, 100)
-
       //           -110
       //          +-------+             -100
       //          |       |            +-------+
@@ -176,12 +169,40 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 290, magnitude_y: -110 },
       });
-      for (const {type, value, op} of results) {
-        console.log(type, value);
-      }
+      
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 290),
         finalCoordinate(2, "Y", -100),
+        snapped(2, 1)
+      ]);
+    });
+    it('Should snap bottom', function () {
+      // Same routine as before, except this time we'll
+      // move 2 to (100, 319), so it will snap top
+      // to (100, 300)
+      //        0                    0
+      //  +-----------+        +-----------+
+      //0 |           |      0 |           |
+      //  |           |        |           |
+      //  |    1      |        |    1      |
+      //  |           |        |           |
+      //  |           |        |           |
+      //  |           |        |           |
+      //  +-----------+        +--+-----+--+ 300
+      //       319       +--->    | 2   |
+      //     +-----+           100|     |
+      //     | 2   |              +-----+
+      //  100|     |
+      //     +-----+
+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 319 },
+      });  
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 100),
+        finalCoordinate(2, "Y", 300),
         snapped(2, 1)
       ]);
     });
