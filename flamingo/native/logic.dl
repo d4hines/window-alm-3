@@ -305,9 +305,6 @@ Not_Snapped_To_Corner(3, 1) :-
     Opposite_Direction(dir__prime, opposite_dir),
     Nearest_Corner(3, 1, opposite_dir, _).
 
-Final_Coordinate(1, X, 0) :- InFluent(Param_Coordinate{1, X}, Value_Coordinate{0}).
-Final_Coordinate(1, Y, 0) :- InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0}).
-
 //Snapped_To_Corner(a, b) :-
 //    Snapped(a, b),
 //    Nearest_Side(a, b, dir),
@@ -348,13 +345,12 @@ Final_Coordinate(a, ax__prime, coord) :-
     Opposite_Axis(ax, ax__prime),
     InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
 
-// Not_Final_Coordinate(window, axis, coord) :-
-//    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-//    Snapped(window, other).
-
-// Final_Coordinate(window, axis, coord) :-
-//    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-//    not Not_Final_Coordinate(window, axis, coord).
+Not_Final_Coordinate(window, axis, coord) :-
+   InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
+   Snapped(window, other).
+Final_Coordinate(window, axis, coord) :-
+   InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
+   not Not_Final_Coordinate(window, axis, coord).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
