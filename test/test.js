@@ -12,10 +12,14 @@ const finalCoordinate = (windowID, axis, coord) => ({
   // Final_Coordinate tells us where the window is after
   // applying special conditions like snapping.
   value: [windowID, axis, coord],
-  // The 1 says this fact became true (-1 means it became false)
+  // The 1 says this fact became true (-1 would mean it became false)
   op: 1
 });
 
+/**
+ * Utility function for generating Snapped data
+ * which is returned by Flamingo after move actions.
+ */
 const snapped = (a, b) => ({
   op: 1,
   type: "snapped",
@@ -29,11 +33,11 @@ describe('Window Motion', () => {
     // This spins up a new Flamingo database (in memory)
     flamingo = new Flamingo();
 
-    // Flamingo.dispatch is how we send actions to Flamingo database.
+    // Flamingo.dispatch is how we send actions to the Flamingo database.
     // Using the awful power of Javascript prototypes, we patch Flamingo.dispatch
     // to throw an error if it ever returns more than one final coordinate
-    // for a given window, which would mean there's an error in the logic somewhere.
-    // Eventually Flamingo will detect these kinds of mistakes at itself compile-time,
+    // for a given window, which would means there's an error in the logic somewhere.
+    // Eventually Flamingo will detect these kinds of mistakes itself compile-time,
     // but for now it needs the extra help.
     const dispatch = Flamingo.prototype.dispatch;
     flamingo.dispatch = (...args) => {
@@ -60,10 +64,9 @@ describe('Window Motion', () => {
 
   describe("Opening a Window", () => {
     it("Should initialize their coordinates to (0, 0)", () => {
-
       // Opening a window happens in two phases: first, you have
       // to add the window to the database (see below); then,
-      // you have to dispatch a "open" action targeting that window.
+      // you have to dispatch an "open" action targeting that window.
 
       // Before you can dispatch actions that target an object,
       // you must add that object to Flamingo's database.
@@ -76,7 +79,7 @@ describe('Window Motion', () => {
       });
 
       // Dispatching an action synchronously returns the new
-      // state that results from that action.
+      // state that results from that action occuring.
       const results = flamingo.dispatch({
         type: "Flamingo/Open_Window",
         payload: { oid: 2, target: 1 },
@@ -91,7 +94,6 @@ describe('Window Motion', () => {
 
   describe('Window snapping', () => {
     // We're going to be working with two windows, 1 and 2
-    // We'll open them both,
     beforeEach(() => {
       // Add window 1 to the domain, with width and height 300
       flamingo.add({
@@ -110,14 +112,13 @@ describe('Window Motion', () => {
         type: "Flamingo/Open_Window",
         payload: { oid: 3, target: 1 },
       });
-
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
         payload: { oid: 4, target: 2 },
       });
     });
 
-    it('Should snap left', function () {
+    it('Should snap left', () => {
       // We're going to start with both at (0,0).
       // We'll move 2 to (310, 100), and it will snap
       // to 1 at (300, 100)
@@ -129,7 +130,6 @@ describe('Window Motion', () => {
       //   |           |  +---+          |           +----+
       //   |           |    2            |           |  2
       //   +-----------+                 +-----------+
-
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
@@ -143,7 +143,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap right', function () {
+    it('Should snap right', () => {
       // Same routine as before, except this time we'll
       // move 2 to (-110, 100), so it will snap left
       // to (-100, 100)
@@ -169,7 +169,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap bottom', function () {
+    it('Should snap bottom', () => {
       // Same routine as before, except this time we'll
       // move 2 to (290, -110), so it will snap bottom
       // to (-100, 100)
@@ -199,7 +199,7 @@ describe('Window Motion', () => {
         snapped(2, 1)
       ]);
     });
-    it('Should snap top', function () {
+    it('Should snap top', () => {
       // Same routine as before, except this time we'll
       // move 2 to (100, 319), so it will snap top
       // to (100, 300)
@@ -217,7 +217,6 @@ describe('Window Motion', () => {
       //     | 2   |              +-----+
       //  100|     |
       //     +-----+
-
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 319 },
@@ -258,7 +257,7 @@ describe('Window Motion', () => {
       });
     });
 
-    it('Should snap to the bottom left corner (snap top)', function () {
+    it('Should snap to the bottom left corner (snap top)', () => {
       // We're going to start with both at (0,0).
       // We'll move 2 to (10, 319), and it will snap
       // to 1 at (0, 300)
@@ -275,20 +274,20 @@ describe('Window Motion', () => {
       //    | 2   |            0|     |
       //  10|     |             +-----+
       //    +-----+
-
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 319 },
       });
 
       expect(results).to.include.deep.members([
+        // X value shouldn't change.
         finalCoordinate(2, "Y", 300),
         snapped(2, 1)
       ]);
     });
 
     // The next 7 tests will just be rotations of the above scenario.
-    it('Should snap to the bottom right corner (snap top)', function () {
+    it('Should snap to the bottom right corner (snap top)', () => {
       //      0                    0
       //      +-----------+        +-----------+
       //    0 |           |      0 |           |
@@ -314,7 +313,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the bottom right corner (snap left)', function () {
+    it('Should snap to the bottom right corner (snap left)', () => {
       //  0                           0
       //  +-----------+               +-----------+
       //0 |           |             0 |           |
@@ -335,7 +334,8 @@ describe('Window Motion', () => {
         snapped(2, 1)
       ]);
     });
-    it('Should snap to the top right corner (snap left)', function () {
+
+    it('Should snap to the top right corner (snap left)', () => {
       //  0                            0
       //  +-----------+   10           +-----------+-----+
       //0 |           | +-----+      0 |           | 2   |
@@ -356,7 +356,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the top right corner (snap bottom)', function () {
+    it('Should snap to the top right corner (snap bottom)', () => {
       //                 -110
       //          +-----+                      -100
       //          |  2  |                     +-----+
@@ -382,7 +382,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the top left corner (snap bottom)', function () {
+    it('Should snap to the top left corner (snap bottom)', () => {
       //   -110
       //   +-----+                    -100
       //   |  2  |                   +-----+
@@ -407,7 +407,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the top left corner (snap right)', function () {
+    it('Should snap to the top left corner (snap right)', () => {
       //           0                             0
       //    10   +--------------+        +--------------------+
       // +-----+ |0             |        | 2   |0             |
@@ -428,7 +428,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the bottom left corner (snap right)', function () {
+    it('Should snap to the bottom left corner (snap right)', () => {
       //           0                               0
       //         +--------------+                +--------------+
       //         |0             |                |0             |
@@ -479,8 +479,8 @@ describe('Window Motion', () => {
       });
     });
 
-    // Windows snap to the outside edges of other windows, but to the
-    // inside edges of monitors.
+    // Windows snap to the inside edges of monitors (as opposed to
+    // the outside edges as with other windows).
     it("Should snap left", () => {
       //   0                                  0
       //   +-------------------------+        +-------------------------+
@@ -627,7 +627,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the top right corner', function () {
+    it('Should snap to the top right corner', () => {
       //   0                                  0
       //   +-------------------10----+        +-----------------+-------+
       // 0 |               +-------+ |      0 |                 |   2   |
@@ -650,7 +650,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the bottom left corner', function () {
+    it('Should snap to the bottom left corner', () => {
       //   0                                  0
       //   +-------------------------+        +-------------------------+
       // 0 |                         |      0 |                         |
@@ -674,7 +674,7 @@ describe('Window Motion', () => {
       ]);
     });
 
-    it('Should snap to the bottom right corner', function () {
+    it('Should snap to the bottom right corner', () => {
       //   0                                  0
       //   +-------------------------+        +-------------------------+
       // 0 |                         |      0 |                         |
@@ -780,8 +780,10 @@ describe('Window Motion', () => {
       ]);
     });
 
-    // The next 7 tests will just be rotations of the above scenario.
-    it('Should not snap if not in snapping range.', function () {
+    it('Should not snap if not in snapping range.', () => {
+      // Like other snaping tests, except we'll move
+      // window 2 really far away and expect it to stay put  
+
       // Add window 1
       flamingo.add({
         type: "Flamingo/Windows",
