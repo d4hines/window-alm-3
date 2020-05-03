@@ -7,12 +7,13 @@ const { Flamingo } = require("../flamingo/lib");
 */
 const finalCoordinate = (windowID, axis, coord) => ({
   type: "final_coordinate",
-  // This tuple matches the ALM function signature: 
+  // This tuple matches the function signature defined in the ALM program: 
   // "Final_Coordinate : Windows x Axes -> Integers"
   // Final_Coordinate tells us where the window is after
   // applying special conditions like snapping.
   value: [windowID, axis, coord],
-  // The 1 says this fact became true (-1 would mean it became false)
+  // The op value says whether the fact was added or removed.
+  // A 1 says this fact became true(-1 would mean it became false)
   op: 1
 });
 
