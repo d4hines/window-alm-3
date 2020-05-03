@@ -1,72 +1,76 @@
-
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
-const { hello } = require("../flamingo/lib");
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
-  app.quit();
-}
+const { debounce } = require("lodash");
+const { new_window, move, open_window, parse_result } = require("./convert");
+const { Flamingo } = require("../flamingo/lib");
 
 const WM_MOUSEMOVE = 0x200
 
+// Instantiate a new Flamingo domain.
+const flamingo = new Flamingo();
+
+const oidToBrowserWindowID = new Map();
+// This is a counter that helps ensure we don't have
+// collisions in our object ids.
+let nextOID = 0;
+
 const createWindow = () => {
+  const width = 800;
+  const height = 600;
+
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+  const win = new BrowserWindow({
+    width,
+    height,
+    x: 0,
+    y: 0,
     frame: false,
     webPreferences: {
       nodeIntegration: true
     }
   });
-
   // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  win.loadFile(path.join(__dirname, 'index.html'));
+
+  const windowOID = nextOID++;
+  oidToBrowserWindowID.set(windowOID, win.id);
+
+  // Add the window to the Flamingo domain.
+  flamingo.add(new_window(windowOID, width, height));
+
+  // Dispatch an Open_Window action to initialize it.
+  const openOID = nextOID++;
+  flamingo.dispatch(open_window(openOID, windowOID));
 
   ipcMain.on("dragStart", () => {
-    const { x: oldMouseX, y: oldMouseY } = screen.getCursorScreenPoint();
-    const { x: oldWindowX, y: oldWindowY, width, height } = mainWindow.getBounds();
-    mainWindow.hookWindowMessage(WM_MOUSEMOVE, () => {
+    let { x: oldMouseX, y: oldMouseY } = screen.getCursorScreenPoint();
+    win.hookWindowMessage(WM_MOUSEMOVE, debounce(() => {
       const { x: newMouseX, y: newMouseY } = screen.getCursorScreenPoint();
       const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
-      const [newWindowX, newWindowY, color, js_x, js_y, js_color] = hello(xDiff, yDiff, oldWindowX, oldWindowY, width, height);
-
-      mainWindow.setBounds({
-        x: js_x,
-        y: js_y
-      });
-      mainWindow.webContents.send("color", js_color.toLowerCase().includes("red") ? "red" : "blue");
-    });
+      oldMouseX = newMouseX;
+      oldMouseY = newMouseY;
+      const moveOID = nextOID++;
+      const results = flamingo.dispatch(move(moveOID, windowOID, xDiff, yDiff))
+        .map(parse_result)
+        .filter(({ type, op }) => type === "final_coordinate" && op === 1);
+      // In a real app, this would be somewhere else, as part
+      // of a dedicated "effects" module. Notice that it doesn't
+      // rely on any closures in the above scope.
+      results
+        .forEach(({ value: [target, axis, coord] }) => {
+          const browserID = oidToBrowserWindowID.get(target);
+          const browserWindow = BrowserWindow.fromId(browserID);
+          browserWindow.setBounds({ [axis.toLowerCase()]: coord });
+        });
+    }), 32);
   });
 
   ipcMain.on("dragEnd", () => {
-    console.log("Drag Ended!");
-    mainWindow.unhookWindowMessage(WM_MOUSEMOVE);
+    win.unhookWindowMessage(WM_MOUSEMOVE);
   });
 };
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
-
-// Quit when all windows are closed.
-app.on('window-all-closed', () => {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+app.on('ready', () => {
+  createWindow();
+  createWindow();
 });
-
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.

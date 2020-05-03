@@ -1,0 +1,146 @@
+##### Opening our First Window #####
+# In ALM, actions are types of objects.
+# We want to open a window, which is an action on window objects,
+# but first we have to tell ALM about the window object that
+# we want to open by adding it to the domain.
+# Once added, that object will stay their until explicitly
+# deleted (i.e, when a window is destroyed).
+
+start;
+# Every object has a unique object id (1 in this case).
+insert Object(1, Windows);
+
+# When we add an object (including an action object),
+# we must add each of its attributes as well.
+# Careful! If you don't add attributes of the correct
+# types, you will screw up your program!
+insert Attribute(1, Attr_Width{100});
+insert Attribute(1, Attr_Height{100});
+
+# Now that we've set up our transaction, we'll commit.
+# The "dump_changes" flag will cause all the changes to our
+# model to be displayed.
+commit; #dump_changes;
+
+# Now we'll dispatch our action. "Opening" the
+# window causes it to initialize with X and Y coordinates.
+# Remember, actions are just types of objects in ALM,
+# so the commands will look very similar to adding the window.
+start;
+insert Object(2, Open_Window);
+insert Attribute(2, Attr_Target{1});
+# That's all for now, so we'll commit the transaction.
+commit; #dump_changes;
+
+# This will produce output like so:
+# OutFluent{.params = Param_Coordinate{.coordinate_1 = 1, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 0}}: +1
+# OutFluent{.params = Param_Coordinate{.coordinate_1 = 1, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 0}}: +1
+
+# Any OutFluent fact is signaling, "Hey, add me back as an InFluent!"
+# Let's do that now. We'll use the "insert_or_update" command because
+# all Fluents are functions (i.e, map params to one and only one value),
+# so we need to ensure uniqueness.
+start;
+insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
+
+# Now that we've added the consequnces of the Open_Window action,
+# we need to clean up by removing the associated facts we added.
+# This will get us to the next "stable" state.
+delete Object(2, Open_Window);
+delete Attribute(2, Attr_Target{1});
+commit; #dump_changes;
+
+# Let's repeate the process to add another identical window.
+# First we add the new window object
+start;
+insert Object(3, Windows);
+insert Attribute(3, Attr_Width{100});
+insert Attribute(3, Attr_Height{100});
+commit;
+
+# Then we open the window.
+start;
+insert Object(4, Open_Window);
+insert Attribute(4, Attr_Target{3});
+commit; #dump_changes;
+
+
+# This produces OutFluents, which add back in as InFluents.
+start;
+insert_or_update InFluent(Param_Coordinate{3, X}, Value_Coordinate{0});
+insert_or_update InFluent(Param_Coordinate{3, Y}, Value_Coordinate{0});
+# We clean up the action again too.
+delete Object(4, Open_Window);
+delete Attribute(4, Attr_Target{3});
+commit; #dump_changes;
+
+# As you can see, there are two distinct kind of events:
+# 1. Adding an object, making it available to domain.
+# 2. Dispatching actions, which modify fluent values.
+# The second event happens in two distinct transactions:
+# - First, the actions produce changes in the OutFluent values
+# - Second, we add (or update) those fluents back into the domain,
+#       which stabilizes the state.
+
+# Now that we have two windows open, let's start moving them!
+# We can do this by dispatching a Move action. Let's second
+# window we created (with object ID 3). We'll move it right
+# 200 pixels.
+start;
+insert Object(4, Move);
+insert Attribute(4, Attr_Target{3});
+insert Attribute(4, Attr_Magnitude{X, 200});
+commit; #dump_changes;
+
+# This will produce the following output:
+# Instance:
+# Instance{._1 = 4, ._2 = Move{}}: +1
+# OutFluent:
+# OutFluent{.params = Param_Coordinate{.coordinate_1 = 3, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 200}}: +1
+# OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = false}}: +1
+# OutFluent{.params = Param_Moving{.moving_1 = 3}, .ret = Value_Moving{.moving_ret = true}}: +1
+
+# In addition to telling us the new coordinates of window 3,
+# this also tells us that window 3 is moving (i.e Moving(3) = true)
+# whereas window 1 is not moving (i.e Moving(3) = false).
+# As this demonstrates, dispatching actions can have more than one consequnce
+# on the state of the model.
+
+# Let's stabilize the model before we go on.
+start;
+insert_or_update InFluent(Param_Coordinate{3, X}, Value_Coordinate{200});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{false});
+insert_or_update InFluent(Param_Moving{3}, Value_Moving{true});
+delete Object(4, Move);
+delete Attribute(4, Attr_Target{3});
+delete Attribute(4, Attr_Magnitude{X, 200});
+commit; #dump_changes;
+
+# We came here for snapping, so let's snap! Windows will snap when they are moved
+# close enough together that the distance between them is lower than the snapping
+# threshold (20 px), so moving window 3 left 90 pixels should do the trick.
+
+start;
+insert Object(5, Move);
+insert Attribute(5, Attr_Target{3});
+insert Attribute(5, Attr_Magnitude{X, -90});
+commit; #dump_changes;
+
+# Actions can have direct and indirect effects. The effect of moving on
+# the final coordinates of a window (that is, the one's that display
+# on the screen) is an indirect effect. Indirect effects are only realized
+# after you stabilize the model, so let's do that.
+start;
+insert_or_update InFluent(Param_Coordinate{3, X}, Value_Coordinate{110});
+insert_or_update InFluent(Param_Moving{1}, Value_Moving{false});
+insert_or_update InFluent(Param_Moving{3}, Value_Moving{true});
+delete Object(5, Move);
+delete Attribute(5, Attr_Target{3});
+delete Attribute(5, Attr_Magnitude{X, 90});
+commit;
+
+#dump Final_Coordinate;
+## You should see that window 3's coordinates are (100, 0),
+## which is exactly what they should be!
+#

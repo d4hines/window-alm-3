@@ -1,5 +1,5 @@
-// DDlog imports
 #![allow(non_camel_case_types, non_snake_case)]
+use differential_datalog::ddval;
 use differential_datalog::ddval::DDValConvert;
 use differential_datalog::program::RelId;
 use differential_datalog::program::Update;
@@ -13,115 +13,174 @@ use value::Value;
 // Neon imports
 use neon::prelude::*;
 
-fn do_thing(
-    delta_x: i64,
-    delta_y: i64,
-    old_window_x: i64,
-    old_window_y: i64,
-    width: i64,
-    height: i64,
-) -> (i64, i64, std::string::String) {
-    // Set up
-    fn cb(_rel: usize, _rec: &Record, _w: isize) {}
-    let mut hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
+extern crate neon;
+extern crate neon_serde;
+#[macro_use]
+extern crate serde_derive;
 
-    // First Data
-    let obj = Universe {
-        oid: 1,
-        universeChild: UniverseChild::Rectangle {
-            x: old_window_x,
-            y: old_window_y,
-            width,
-            height,
-            rectangleChild: RectangleChild {
-                color: types::Color::Blue,
-            },
-        },
-    };
-    let action = Universe {
-        oid: 2,
-        universeChild: UniverseChild::Action {
-            actionChild: ActionChild::MoveAction {
-                target: 1,
-                delta_x,
-                delta_y,
-            },
-        },
-    };
-    let update1 = Update::Insert {
-        relid: Relations::Universe as RelId,
-        v: Value::Universe(obj).into_ddvalue(),
-    };
-    let update2 = Update::Insert {
-        relid: Relations::Universe as RelId,
-        v: Value::Universe(action).into_ddvalue(),
-    };
+// Struct for the DB.
+pub struct Flamingo {
+    hddlog: HDDlog,
+}
 
-    let cmds = vec![update1, update2];
-    // First Transact
-    hddlog.transaction_start().unwrap();
-    hddlog.apply_valupdates(cmds.into_iter()).unwrap();
-    let mut delta = hddlog.transaction_commit_dump_changes().unwrap();
-    // Clean up
-    hddlog.transaction_start().unwrap();
-    hddlog.clear_relation(Relations::Universe as RelId).unwrap();
-    hddlog.transaction_commit().unwrap();
+fn new_object_to_cmd(new_object: NewObject, add: bool) -> Vec<Update<ddval::DDValue>> {
+    let obj_val = Value::Object(new_object.object).into_ddvalue();
+    
+    let obj = vec![if add {
+        Update::Insert {
+            relid: Relations::Object as RelId,
+            v: obj_val,
+        }
+    } else {
+        Update::DeleteValue {
+            relid: Relations::Object as RelId,
+            v: obj_val,
+        }
+    }];
+    let attributes = new_object
+        .attributes
+        .iter()
+        .map(|a| {
+            if add {
+                Update::Insert {
+                    relid: Relations::Attribute as RelId,
+                    v: Value::Attribute(a.clone()).into_ddvalue(),
+                }
+            } else {
+                Update::DeleteValue {
+                    relid: Relations::Attribute as RelId,
+                    v: Value::Attribute(a.clone()).into_ddvalue(),
+                }
+            }
+        })
+        .collect();
 
-    // Shut down
-    hddlog.stop().unwrap();
+    let all = vec![obj, attributes];
 
-    // First Parse output
-    let rects = delta.get_rel(Relations::Output_MagicRectangle as RelId);
-    let (rect_val, _) = rects.iter().next().expect("Nothing returned by DDLog!");
-    unsafe {
-        let Value::Output_MagicRectangle(rect) = DDValConvert::from_ddvalue_ref(rect_val);
-        return (rect.x, rect.y, rect.color.to_string());
+    all.concat()
+}
+
+// These match the values
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Default)]
+struct StateChange {
+    val: Output_Value,
+    op: isize,
+}
+
+impl Flamingo {
+    fn add(&self, new_object: NewObject) {
+        let cmds = new_object_to_cmd(new_object, true);
+        self.hddlog.transaction_start().unwrap();
+        self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
+        self.hddlog.transaction_commit().unwrap();
+    }
+
+    fn dispatch(&self, action: NewObject) -> Vec<StateChange> {
+        ///////////// Phase 1: Add Action //////////////////
+        let action_cmds = new_object_to_cmd(action.clone(), true);
+        self.hddlog.transaction_start().unwrap();
+        self.hddlog
+            .apply_valupdates(action_cmds.into_iter())
+            .unwrap();
+        let mut action_delta = self.hddlog.transaction_commit_dump_changes().unwrap();
+        //////////////// Phase 2: Stabilize New State ////////////////
+        // Extract the OutFluents returned from the action transaction.
+        let outfluents = action_delta.get_rel(Relations::OutFluent as RelId);
+        // Map each of them into InFluents
+        let outfluent_cmds: Vec<Update<ddval::DDValue>> = outfluents
+            .into_iter()
+            .map(|(val, _)| unsafe {
+                // The call to Value::OutFluent is unsafe.
+                let Value::OutFluent(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
+                let outfluent = outfluent_ref.clone();
+
+                let influent = InFluent {
+                    params: outfluent.params,
+                    ret: outfluent.ret,
+                };
+                // We use InsertOrUpdate so as to avoid duplcating fluent values (fluents are functions)
+                Update::InsertOrUpdate {
+                    relid: Relations::InFluent as RelId,
+                    v: Value::InFluent(influent).into_ddvalue(),
+                }
+            })
+            .collect();
+
+        let delete_action_cmds = new_object_to_cmd(action.clone(), false);
+        let all_cmds = vec![outfluent_cmds, delete_action_cmds];
+        // Transact the new InFluents
+        self.hddlog.transaction_start().unwrap();
+
+        self.hddlog
+            .apply_valupdates(all_cmds.concat().into_iter())
+            // .apply_valupdates(outfluent_cmds.into_iter())
+            .unwrap();
+        // This contains the new stable state.
+        let mut influent_delta = self.hddlog.transaction_commit_dump_changes().unwrap();
+
+        // Map each item to a (Output_Value, isize). The isize is either +1 or -1, where +1 means insertion
+        // and -1 means deletion
+        influent_delta
+            .get_rel(Relations::Output as RelId)
+            .into_iter()
+            .map(|(val, op)| unsafe {
+                // The call to Value::Output is unsafe.
+                let Value::Output(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
+                let output = outfluent_ref.clone();
+                StateChange {
+                    val: output.val,
+                    op: *op,
+                }
+            })
+            .into_iter()
+            .collect()
+    }
+
+    fn stop(&mut self) {
+        self.hddlog.stop().unwrap();
     }
 }
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsArray> {
-    let x_diff = cx.argument::<JsNumber>(0)?.value();
-    let y_diff = cx.argument::<JsNumber>(1)?.value();
+declare_types! {
+    pub class JsFlamingo for Flamingo {
+        init(mut _cx) {
+          fn cb(_rel: usize, _rec: &Record, _w: isize) {}
+          let hddlog = HDDlog::run(1 as usize, false, cb).unwrap();
 
-    let old_window_x = cx.argument::<JsNumber>(2)?.value();
-    let old_window_y = cx.argument::<JsNumber>(3)?.value();
+          Ok(Flamingo {
+            hddlog,
+          })
+        }
 
-    let width = cx.argument::<JsNumber>(4)?.value();
-    let height = cx.argument::<JsNumber>(5)?.value();
+        method add(mut cx) {
+            let arg0 = cx.argument::<JsValue>(0)?;
+            let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;
+            let this = cx.this();
+            let guard = cx.lock();
+            this.borrow(&guard).add(arg0_value);
+            Ok(cx.undefined().upcast())
+        }
 
-    let new_window_x = old_window_x + x_diff;
-    let new_window_y = old_window_y + y_diff;
+        method dispatch(mut cx) {
+            let arg0 = cx.argument::<JsValue>(0)?;
+            let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;
+            let this = cx.this();
+            let guard = cx.lock();
+            let results = this.borrow(&guard).dispatch(arg0_value);
+            let js_value = neon_serde::to_value(&mut cx, &results)?;
+            Ok(js_value)
+        }
 
-    let color = if new_window_x + width < 1000.0 && new_window_y + height < 1000.0 {
-        cx.string("blue")
-    } else {
-        cx.string("red")
-    };
-
-    let new_window_x_js = cx.number(new_window_x);
-    let new_window_y_js = cx.number(new_window_y);
-    let (foo_x, foo_y, foo_color) = do_thing(
-        x_diff as i64,
-        y_diff as i64,
-        old_window_x as i64,
-        old_window_y as i64,
-        width as i64,
-        height as i64,
-    );
-
-    let js_x = cx.number(foo_x as f64);
-    let js_y = cx.number(foo_y as f64);
-    let js_color = cx.string(foo_color);
-
-    let return_val = JsArray::new(&mut cx, 6 as u32);
-    return_val.set(&mut cx, 0 as u32, new_window_x_js).unwrap();
-    return_val.set(&mut cx, 1 as u32, new_window_y_js).unwrap();
-    return_val.set(&mut cx, 2 as u32, color).unwrap();
-    return_val.set(&mut cx, 3 as u32, js_x).unwrap();
-    return_val.set(&mut cx, 4 as u32, js_y).unwrap();
-    return_val.set(&mut cx, 5 as u32, js_color).unwrap();
-    
-    return Ok(return_val);
+        method stop(mut cx) {
+            let mut this = cx.this();
+            let guard = cx.lock();
+            this.borrow_mut(&guard).stop();
+            Ok(cx.undefined().upcast())
+        }
+    }
 }
 
-register_module!(mut cx, { cx.export_function("hello", hello) });
+register_module!(mut cx, {
+    cx.export_class::<JsFlamingo>("Flamingo")?;
+    Ok(())
+});
