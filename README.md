@@ -1,5 +1,7 @@
 # Electron + ALM Demo
 
+Copyright ChartIQ 2020. All rights reserved.
+
 This repo demo's a compiled ALM program working with Electron
 as a native node module.
 
