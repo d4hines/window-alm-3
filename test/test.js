@@ -40,7 +40,7 @@ describe('Window Motion', () => {
       const results = dispatch.apply(flamingo, args);
       // Narrow the results to just the insertions of final_coordinates
       const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
-      for (const { value: [ id, axis ]} of insertions) {
+      for (const { value: [id, axis] } of insertions) {
         // For each final_coordinate, look for others with the same window and axis.
         const others = insertions
           .filter(({ value: [otherID, otherAxis] }) => otherID === id && otherAxis === axis);
@@ -110,7 +110,7 @@ describe('Window Motion', () => {
         type: "Flamingo/Open_Window",
         payload: { oid: 3, target: 1 },
       });
-      
+
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
         payload: { oid: 4, target: 2 },
@@ -134,7 +134,7 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
       });
-      
+
       // We ignore the deletions by using .include instead of .have
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 300),
@@ -161,7 +161,7 @@ describe('Window Motion', () => {
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: -110, magnitude_y: 100 },
       });
-    
+
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", -100),
         finalCoordinate(2, "Y", 100),
@@ -187,12 +187,12 @@ describe('Window Motion', () => {
       //  |           |        |           |
       //  |           |        |           |
       //  +-----------+        +-----------+
-      
+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 290, magnitude_y: -110 },
       });
-      
+
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 290),
         finalCoordinate(2, "Y", -100),
@@ -221,7 +221,7 @@ describe('Window Motion', () => {
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 319 },
-      });  
+      });
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 100),
@@ -251,14 +251,14 @@ describe('Window Motion', () => {
         type: "Flamingo/Open_Window",
         payload: { oid: 3, target: 1 },
       });
-      
+
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
         payload: { oid: 4, target: 2 },
       });
     });
 
-    it('Should snap to the bottom left corner', function () {
+    it('Should snap to the bottom left corner (snap top)', function () {
       // We're going to start with both at (0,0).
       // We'll move 2 to (10, 319), and it will snap
       // to 1 at (0, 300)
@@ -272,23 +272,545 @@ describe('Window Motion', () => {
       //   |           |        |           |
       //   +--319------+        +-----+-----+ 300
       //    +-----+             | 2   |
-      //    | 2   |           10|     |
+      //    | 2   |            0|     |
       //  10|     |             +-----+
       //    +-----+
-    
+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
         payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 319 },
       });
-      for (const {type, value, op} of results) {
-        console.log(type, value, op);
-      }
-      
-      // We ignore the deletions by using .include instead of .have
+
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 0),
         finalCoordinate(2, "Y", 300),
         snapped(2, 1)
+      ]);
+    });
+
+    // The next 7 tests will just be rotations of the above scenario.
+    it('Should snap to the bottom right corner (snap top)', function () {
+      //      0                    0
+      //      +-----------+        +-----------+
+      //    0 |           |      0 |           |
+      //      |           |        |           |
+      //      |    1      |        |    1      |
+      //      |           |        |           |
+      //      |           |  +---> |           |
+      //      |           |        |           |
+      //      +-------319-+        +-----+-----+ 300
+      //           +-----+               | 2   |
+      //           | 2   |            200|     |
+      //        190|     |               +-----+
+      //           +-----+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 190, magnitude_y: 319 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 200),
+        finalCoordinate(2, "Y", 300),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the bottom right corner (snap left)', function () {
+      //  0                           0
+      //  +-----------+               +-----------+
+      //0 |           |             0 |           |
+      //  |           |  190          |           |
+      //  |    1      | +-----+       |    1      | 200
+      //  |           | | 2   | +---> |           +-----+
+      //  |           | |319  |       |           | 2   |
+      //  |           | +-----+       |           |300  |
+      //  +-----------+               +-----------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 319, magnitude_y: 190 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 300),
+        finalCoordinate(2, "Y", 200),
+        snapped(2, 1)
+      ]);
+    });
+    it('Should snap to the top right corner (snap left)', function () {
+      //  0                            0
+      //  +-----------+   10           +-----------+-----+
+      //0 |           | +-----+      0 |           | 2   |
+      //  |           | | 2   |        |           |300  |
+      //  |    1      | |319  |  +---> |    1      +-----+
+      //  |           | +-----+        |           |
+      //  |           |                |           |
+      //  |           |                |           |
+      //  +-----------+                +-----------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 319, magnitude_y: 10 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 300),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the top right corner (snap bottom)', function () {
+      //                 -110
+      //          +-----+                      -100
+      //          |  2  |                     +-----+
+      //          |190  |                     |  2  |
+      //   0      +-----+             0       |200  |
+      //  +--------------+           +--------------+
+      // 0|              |          0|              |
+      //  |              |   +---->  |              |
+      //  |      1       |           |      1       |
+      //  |              |           |              |
+      //  |              |           |              |
+      //  |              |           |              |
+      //  +--------------+           +--------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 190, magnitude_y: -110 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 200),
+        finalCoordinate(2, "Y", -100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the top left corner (snap bottom)', function () {
+      //   -110
+      //   +-----+                    -100
+      //   |  2  |                   +-----+
+      //   |1    |                   |  2  |
+      //   +-----+                   |0    |
+      //  +--------------+           +-----+--------+
+      // 0|              |          0|              |
+      //  |              |   +---->  |              |
+      //  |      1       |           |      1       |
+      //  |              |           |              |
+      //  |              |           |              |
+      //  |              |           |              |
+      //  +--------------+           +--------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 1, magnitude_y: -110 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "Y", -100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the top left corner (snap right)', function () {
+      //           0                             0
+      //    10   +--------------+        +--------------------+
+      // +-----+ |0             |        | 2   |0             |
+      // | 2   | |              | +----> | -100|              |
+      // | -101| |      1       |        +-----+      1       |
+      // +-----+ |              |              |              |
+      //         |              |              |              |
+      //         |              |              |              |
+      //         +--------------+              +--------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: -101, magnitude_y: 10 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", -100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the bottom left corner (snap right)', function () {
+      //           0                               0
+      //         +--------------+                +--------------+
+      //         |0             |                |0             |
+      //    190  |              | +---->         |              |
+      // +-----+ |      1       |             200|      1       |
+      // | 2   | |              |          +-----+              |
+      // | -101| |              |          | 2   |              |
+      // +-----+ |              |          | -100|              |
+      //         +--------------+          +--------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: -101, magnitude_y: 190 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "Y", 200),
+        finalCoordinate(2, "X", -100),
+        snapped(2, 1)
+      ]);
+    });
+  });
+
+  describe("Snapping to the sides of Monitors", () => {
+    beforeEach(() => {
+      // Monitors are added in the same way as windows.
+      // We'll work with a single monitor, with width 800 and height 600.
+      flamingo.add({
+        type: "Flamingo/Monitors",
+        payload: { oid: 1, width: 800, height: 600 }
+      });
+      // We'll use a single window with width and height 100 for each test.
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+
+      // Initialize the monitor with X and Y (since it's the primary,
+      // we'll set to (0,0)).
+      flamingo.dispatch({
+        type: "Flamingo/Set_Monitor_Bounds",
+        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+      });
+
+      // Open the window, which initializes its coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+    });
+
+    // Windows snap to the outside edges of other windows, but to the
+    // inside edges of monitors.
+    it("Should snap left", () => {
+      //   0                                  0
+      //   +-------------------------+        +-------------------------+
+      // 0 |                         |      0 |                         |
+      //   |   100                   |        | 100                     |
+      //   | +-------+               |        +-------+                 |
+      //   | |   2   |         1     |        |   2   |           1     |
+      //   | |10     |               | +----> |0      |                 |
+      //   | +-------+               |        +-------+                 |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 100 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "Y", 100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it("Should snap top", () => {
+      //   0                                  0
+      //   +------10-----------------+        +-----+-------+-----------+
+      // 0 |    +-------+            |      0 |     |   2   |           |
+      //   |    |   2   |            |        |     |100    |           |
+      //   |    |100    |            |        |     +-------+           |
+      //   |    +-------+      1     |        |                   1     |
+      //   |                         | +----> |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 10 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it("Should snap right", () => {
+      //   0                                  0
+      //   +-------------------------+        +-------------------------+
+      // 0 |                         |      0 |                         |
+      //   |                 100     |        |                   100   |
+      //   |               +-------+ |        |                 +-------+
+      //   |         1     |   2   | |        |         1       |   2   |
+      //   |               |690    | | +----> |                 |700    |
+      //   |               +-------+ |        |                 +-------+
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 100 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 700),
+        finalCoordinate(2, "Y", 100),
+        snapped(2, 1)
+      ]);
+    });
+
+    it("Should snap bottom", () => {
+      //   0                                  0
+      //   +-------------------------+        +-------------------------+
+      // 0 |                         |      0 |                         |
+      //   |             1           |        |                         |
+      //   |                         |        |                         |
+      //   |       490               |        |                         |
+      //   |     +-------+           | +----> |       500               |
+      //   |     |   2   |           |        |     +-------+           |
+      //   |     |100    |           |        |     |   2   |           |
+      //   |     +-------+           |        |     |100    |           |
+      //   +-------------------------+        +-------------+-----------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 490 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 100),
+        finalCoordinate(2, "Y", 500),
+        snapped(2, 1)
+      ]);
+    });
+  });
+
+  describe('Snapping to the corners of Monitors', () => {
+    // We'll do the same setup as the above set of tests.
+    beforeEach(() => {
+      flamingo.add({
+        type: "Flamingo/Monitors",
+        payload: { oid: 1, width: 800, height: 600 }
+      });
+      // We'll use a single window with width and height 100 for each test.
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+
+      // Initialize the monitor with X and Y (since it's the primary,
+      // we'll set to (0,0)).
+      flamingo.dispatch({
+        type: "Flamingo/Set_Monitor_Bounds",
+        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+      });
+
+      // Open the window, which initializes its coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+    });
+
+    it('Should snap to the top left corner', () => {
+      //   0                                  0
+      //   +----10-------------------+        +-------+-----------------+
+      // 0 | +-------+               |      0 |   2   |                 |
+      //   | |   2   |   1           |        |       |                 |
+      //   | |10     |               |        +-------+                 |
+      //   | +-------+               |        |                         |
+      //   |                         | +----> |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 10 },
+      });
+
+      // No change in coordinates, since the window snapped back to its original position
+      expect(results.find(({ type }) => type === "final_coordinate")).to.be.undefined;
+      expect(results).to.include.deep.members([
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the top right corner', function () {
+      //   0                                  0
+      //   +-------------------10----+        +-----------------+-------+
+      // 0 |               +-------+ |      0 |                 |   2   |
+      //   |               |   2   | |        |                 |700    |
+      //   |               |690    | |        |                 +-------+
+      //   |        1      +-------+ | +----> |       1                 |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 10 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 700),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the bottom left corner', function () {
+      //   0                                  0
+      //   +-------------------------+        +-------------------------+
+      // 0 |                         |      0 |                         |
+      //   |                         |        |                         |
+      //   |                         |        |                         |
+      //   |        1         490    | +----> |        1                |
+      //   |               +-------+ |        |                    500  |
+      //   |               |   2   | |        |                 +-------+
+      //   |               |690    | |        |                 |   2   |
+      //   |               +-------+ |        |                 |700    |
+      //   +-------------------------+        +-------------------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 490 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 700),
+        finalCoordinate(2, "Y", 500),
+        snapped(2, 1)
+      ]);
+    });
+
+    it('Should snap to the bottom right corner', function () {
+      //   0                                  0
+      //   +-------------------------+        +-------------------------+
+      // 0 |                         |      0 |                         |
+      //   |                         |        |                         |
+      //   |            1            |        |            1            |
+      //   |    490                  | +----> |                         |
+      //   | +-------+               |        |  500                    |
+      //   | |   2   |               |        +-------+                 |
+      //   | |10     |               |        |   2   |                 |
+      //   | +-------+               |        |       |                 |
+      //   +-------------------------+        +-------+-----------------+
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 500 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "Y", 500),
+        snapped(2, 1)
+      ]);
+    });
+  });
+
+  describe('When not to snap', () => {
+    it('Should not snap if the window overlaps another window', () => {
+      // +---------+
+      // |         |
+      // |    1  +----------+
+      // |       | |        |
+      // |       | |   2    |
+      // +---------+        |
+      //         |          |
+      //         +----------+
+
+      // Add window 1
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 1, width: 100, height: 100 }
+      });
+      // Add window 2
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+      // Open both windows, which initializes their coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 1 },
+      });
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+
+      // Move window 2 to (90, 50)
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 90, magnitude_y: 50 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 90),
+        finalCoordinate(2, "Y", 50),
+      ]);
+    });
+
+    it('Should not snap if the window overlaps a monitor', () => {
+      // Same scenario as above, but this time 1 is a monitor.
+
+      // Add the monitor
+      flamingo.add({
+        type: "Flamingo/Monitors",
+        payload: { oid: 1, width: 800, height: 600 }
+      });
+      // Add the window
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+
+      // Initialize the monitor with X and Y (since it's the primary,
+      // we'll set to (0,0)).
+      flamingo.dispatch({
+        type: "Flamingo/Set_Monitor_Bounds",
+        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+      });
+
+      // Open the window, which initializes its coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+
+      // Move window 2 to (790, 50)
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 790, magnitude_y: 50 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 790),
+        finalCoordinate(2, "Y", 50),
+      ]);
+    });
+
+    // The next 7 tests will just be rotations of the above scenario.
+    it('Should not snap if not in snapping range.', function () {
+      // Add window 1
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 1, width: 100, height: 100 }
+      });
+      // Add window 2
+      flamingo.add({
+        type: "Flamingo/Windows",
+        payload: { oid: 2, width: 100, height: 100 }
+      });
+      // Open both windows, which initializes their coords at (0, 0)
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 1 },
+      });
+      flamingo.dispatch({
+        type: "Flamingo/Open_Window",
+        payload: { oid: 4, target: 2 },
+      });
+
+      // Move window 2 to (1000, 1000)
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: { oid: 5, target: 2, magnitude_x: 1000, magnitude_y: 1000 },
+      });
+
+      expect(results).to.include.deep.members([
+        finalCoordinate(2, "X", 1000),
+        finalCoordinate(2, "Y", 1000),
       ]);
     });
   });

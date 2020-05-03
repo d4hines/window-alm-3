@@ -55,6 +55,7 @@ typedef Node = Universe
     | Window_Action
     | Open_Window
     | Move
+    | Set_Monitor_Bounds
 
 #[rust="serde(untagged)"]
 typedef AttributeValue = Attr_Width{width: s64}
@@ -62,9 +63,13 @@ typedef AttributeValue = Attr_Width{width: s64}
     | Attr_Target{target: OID}
     | Attr_Magnitude_X{magnitude_x: s64}
     | Attr_Magnitude_Y{magnitude_y: s64}
+    | Attr_Monitor_X{monitor_x: s64}
+    | Attr_Monitor_Y{monitor_y: s64}
+    | Attr_Monitor{monitor: OID}
 
 // Encode Hiearchy facts
 Link(Window_Action, Actions).
+Link(Set_Monitor_Bounds, Actions).
 Link(Open_Window, Window_Action).
 Link(Move, Window_Action).
 Link(Rectangles, Universe).
@@ -113,6 +118,9 @@ typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
     | Out_Attracts{attracts: Attracts}
     | Out_Nearest_Side{nearest_side: Nearest_Side}
     | Out_On_Same_Line{on_same_Line: On_Same_Line}
+    | Out_Nearest_Corner{nearest_corner: Nearest_Corner}
+    | Out_Not_Snapped_To_Corner{not_snapped_to_corner: Not_Snapped_To_Corner}
+    | Out_Distance{distance: Distance}
 
 output relation Output(val: Output_Value)
 Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
@@ -121,6 +129,9 @@ Output(Out_Snapped_To_Corner{snapped_to_corner}) :- Snapped_To_Corner[snapped_to
 Output(Out_Attracts{attracts}) :- Attracts[attracts].
 Output(Out_Nearest_Side{nearest_side}) :- Nearest_Side[nearest_side].
 Output(Out_On_Same_Line{on_same_Line}) :- On_Same_Line[on_same_Line].
+Output(Out_Nearest_Corner{nearest_corner}) :- Nearest_Corner[nearest_corner].
+Output(Out_Not_Snapped_To_Corner{snapped_to_corner}) :- Not_Snapped_To_Corner[snapped_to_corner].
+Output(Out_Distance{distance}) :- Distance[distance].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
@@ -216,10 +227,10 @@ Nearest_Corner(a, b, dir, dir__prime) :-
     Axis(dir__prime, ax__prime),
     Opposite_Direction(dir__prime, dir__prime__prime),
     Side(a, dir__prime, a1),
-    Side(a, dir__prime, b1),
+    Side(b, dir__prime, b1),
     Side(a, dir__prime__prime, a2),
     Side(b, dir__prime__prime, b2),
-    abs(a1 - b1)  <  abs(2 - b2).
+    abs(a1 - b1)  <  abs(a2 - b2).
 
 Nearest_Corner(a, b, dir, dir__prime) :-
     Nearest_Corner(a, b, dir__prime, dir).
@@ -241,6 +252,16 @@ OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
 OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Attribute(action, Attr_Target{a}).
+
+OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
+    Instance(action, Set_Monitor_Bounds),
+    Attribute(action, Attr_Monitor{m}),
+    Attribute(action, Attr_Monitor_X{x}).
+
+OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
+    Instance(action, Set_Monitor_Bounds),
+    Attribute(action, Attr_Monitor{m}),
+    Attribute(action, Attr_Monitor_Y{y}).
 
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
@@ -271,23 +292,23 @@ Not_Snapped(a, b) :-
     Attracts(b, a, dir),
     Attracts(c, a, dir__prime),
     dir__prime != dir.
-    
+
 Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(a, b, dir),
     not Not_Snapped(a, b).
 
-Not_Snapped_To_Corner(3, 1) :-
-    Snapped(3, 1),
-    Nearest_Side(3, 1, dir),
-    Axis(dir, ax),
-    Opposite_Axis(ax, ax__prime),
-    Nearest_Corner(3, 1, dir, dir__prime),
-    Side(3, dir__prime, side_a),
-    Side(1, dir__prime, side_b),
-    abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
-    Opposite_Direction(dir__prime, opposite_dir),
-    Nearest_Corner(3, 1, opposite_dir, _).
+Not_Snapped_To_Corner(a, b) :-
+   Snapped(a, b),
+   Nearest_Side(a, b, dir),
+   Axis(dir, ax),
+   Opposite_Axis(ax, ax__prime),
+   Nearest_Corner(a, b, dir, dir__prime),
+   Side(a, dir__prime, side_a),
+   Side(b, dir__prime, side_b),
+   abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
+   Opposite_Direction(dir__prime, opposite_dir),
+   Nearest_Corner(a, b, opposite_dir, _).
 
 Snapped_To_Corner(a, b) :-
     Snapped(a, b),
@@ -300,7 +321,7 @@ Snapped_To_Corner(a, b) :-
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
     not Not_Snapped_To_Corner(a, b).
 
- Final_Coordinate(a, ax, new_coord) :-
+Final_Coordinate(a, ax, new_coord) :-
     Snapped(a, b),
     Distance(a, b, d),
     Nearest_Side(a, b, dir),
@@ -332,6 +353,7 @@ Final_Coordinate(a, ax__prime, coord) :-
 Not_Final_Coordinate(window, axis, coord) :-
    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
    Snapped(window, other).
+
 Final_Coordinate(window, axis, coord) :-
    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
    not Not_Final_Coordinate(window, axis, coord).
@@ -341,6 +363,7 @@ Attracts(a, b, dir) :-
     d < static_Snapping_Threshold(),
     Closest(a, b),
     Nearest_Side(b, a, dir).
+
 
 Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
@@ -354,12 +377,13 @@ Nearest_Side(a, b, dir) :-
     Opposite_Axis(ax, ax__prime),
     On_Same_Line(a, b, ax__prime).
 
-Nearest_Side(w, m, dir) :-
-    Instance(w, Windows),
-    Instance(m, Monitors),
-    Side(w, dir, edge_w),
-    Side(m, dir, edge_m),
-    Distance(w, m, d),
+Nearest_Side(a, b, dir) :-
+    Instance(a, Windows),
+    Instance(b, Monitors),
+    Side(a, dir, edge_w),
+    Side(b, dir, edge_m),
+    Distance(a, b, d),
+    abs(edge_w - edge_m) == d,
     Axis(dir, ax),
     Opposite_Axis(ax, ax__prime),
     On_Same_Line(a, b, ax__prime).
