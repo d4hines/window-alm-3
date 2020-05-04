@@ -87,3 +87,7 @@ typings/
 
 # Electron-Forge
 out/
+
+# DDLog binary
+ddlog.tar.gz
+ddlog/

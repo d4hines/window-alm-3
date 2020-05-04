@@ -5,13 +5,14 @@
   "description": "My Electron application description",
   "main": "src/index.js",
   "scripts": {
+    "install": "wsl ./fetch_ddlog.sh",
     "pretest": "cd flamingo && neon build --release",
     "test": "mocha",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "build:ddlog": "cd flamingo/native && ddlog -i ./logic.dl -L $DDLOG_LIB",
-    "build": "cd flamingo && electron-build-env neon build --release",
+    "build:ddlog": "cd flamingo/native && wsl ../../ddlog/bin/ddlog -i ./logic.dl -L ../../ddlog/lib",
+    "build": "yarn build:ddlog && cd flamingo && electron-build-env neon build --release",
     "clean": "cd flamingo && neon clean",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
