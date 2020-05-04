@@ -119,7 +119,6 @@ relation Side(_1: OID, _2: Directions, _3: s64)
 relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
 relation Overlaps(_1: OID, _2: OID)
 relation Attracts(_1: OID, _2: OID, _3: Directions)
-relation Not_Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 relation Not_Snapped(_1: OID, _2: OID)
 relation Snapped(_1: OID, _2: OID)
@@ -359,13 +358,9 @@ Final_Coordinate(a, ax__prime, coord) :-
     Opposite_Axis(ax, ax__prime),
     InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
 
-Not_Final_Coordinate(window, axis, coord) :-
-   InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-   Snapped(window, other).
-
 Final_Coordinate(window, axis, coord) :-
    InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-   not Not_Final_Coordinate(window, axis, coord).
+   not Snapped(window, _).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
