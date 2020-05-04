@@ -135,10 +135,10 @@ Output(Out_Distance{distance}) :- Distance[distance].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
-    20
+    30
 }
 function static_Snapping_Threshold(): s64 {
-    20
+    30
 }
 
 Opposite_Direction(DLeft, DRight).
