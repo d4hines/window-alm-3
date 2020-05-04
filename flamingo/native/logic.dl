@@ -12,7 +12,7 @@ function abs(n: s64): s64 {
 // Built-in Object ID type
 typedef OID = s64
 
-input relation Object(oid: OID, sort: Node)
+input relation Object(oid: OID, sort: Node, attributes: Map<string, AttributeValue>)
 primary key (x) x.oid
 
 // Links together nodes in the sort hiearchy
@@ -20,24 +20,16 @@ relation Link(_1: Node, _2: Node)
 Link(Actions, Universe).
 
 relation Is_A(_1: OID, _2: Node)
-Is_A(obj, sort) :- Object(obj, sort).
+Is_A(obj, sort) :- Object(obj, sort, _).
 
 relation Instance(_1: OID, _2: Node)
 Instance(obj, sort) :- Is_A(obj, sort).
 Instance(obj, sort1) :- Instance(obj, sort2), Link(sort2, sort1).
 
-input relation Attribute(oid: OID, val: AttributeValue)
-
 input relation InFluent(params: FluentParam, ret: FluentValue)
 primary key (x) x.params
 
 output relation OutFluent(params: FluentParam, ret: FluentValue)
-
-// Bundle of object and attributes for use in Rust
-typedef NewObject = NewObject {
-    object: Object,
-    attributes: Vec<Attribute>
-}
 
 //////////// Dynamic Part of Lib ///////////////////
 ////////////////////////////////////////////////////
@@ -66,6 +58,38 @@ typedef AttributeValue = Attr_Width{width: s64}
     | Attr_Monitor_X{monitor_x: s64}
     | Attr_Monitor_Y{monitor_y: s64}
     | Attr_Monitor{monitor: OID}
+
+output relation Width(oid: OID, value: s64)
+Width(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Width{var x}} = map_get(attributes, "width").
+
+output relation Height(oid: OID, value: s64)
+Height(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Height{var x}} = map_get(attributes, "height").
+
+output relation Target(oid: OID, value: OID)
+Target(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Target{var x}} = map_get(attributes, "target").
+
+output relation Magnitude_X(oid: OID, value: s64)
+Magnitude_X(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Magnitude_X{var x}} = map_get(attributes, "magnitude_x").
+
+output relation Magnitude_Y(oid: OID, value: s64)
+Magnitude_Y(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Magnitude_Y{var x}} = map_get(attributes, "magnitude_y").
+
+output relation Monitor_X(oid: OID, value: s64)
+Monitor_X(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Monitor_X{var x}} = map_get(attributes, "monitor_x").
+
+output relation Monitor_Y(oid: OID, value: s64)
+Monitor_Y(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Monitor_Y{var x}} = map_get(attributes, "monitor_y").
+
+output relation Monitor(oid: OID, value: OID)
+Monitor(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Monitor{var x}} = map_get(attributes, "monitor").
 
 // Encode Hiearchy facts
 Link(Window_Action, Actions).
@@ -151,12 +175,12 @@ Side(rectangle, DTop, value) :-
 
 Side(rectangle, DRight, r_value) :-
     Side(rectangle, DLeft, l_value),
-    Attribute(rectangle, Attr_Width{w}),
+    Width(rectangle, w),
     var r_value = l_value + w.
 
 Side(rectangle, DBottom, b_value) :-
     Side(rectangle, DTop, t_value),
-    Attribute(rectangle, Attr_Height{h}),
+    Height(rectangle, h),
     var b_value = t_value + h.
 
 On_Same_Line(a, b, axis) :-
@@ -232,43 +256,43 @@ Closest(a, b) :-
 
 OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
-    Attribute(action, Attr_Target{a}).
+    Target(action, a).
 
 OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
-    Attribute(action, Attr_Target{a}).
+    Target(action, a).
 
 OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
     Instance(action, Set_Monitor_Bounds),
-    Attribute(action, Attr_Monitor{m}),
-    Attribute(action, Attr_Monitor_X{x}).
+    Monitor(action, m),
+    Monitor_X(action, x).
 
 OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
     Instance(action, Set_Monitor_Bounds),
-    Attribute(action, Attr_Monitor{m}),
-    Attribute(action, Attr_Monitor_Y{y}).
+    Monitor(action, m),
+    Monitor_Y(action, y).
 
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
-    Attribute(action, Attr_Target{window}),
-    Attribute(action, Attr_Magnitude_X{m}),
+    Target(action, window),
+    Magnitude_X(action, m),
     InFluent(Param_Coordinate{window, X}, Value_Coordinate{coord}),
     var new_coord = coord + m.
     
 OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
-    Attribute(action, Attr_Target{window}),
-    Attribute(action, Attr_Magnitude_Y{m}),
+    Target(action, window),
+    Magnitude_Y(action, m),
     InFluent(Param_Coordinate{window, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
     Instance(action, Move),
-    Attribute(action, Attr_Target{window}).
+    Target(action, window).
 
 OutFluent(Param_Moving{other}, Value_Moving{false}) :-
     Instance(action, Move),
-    Attribute(action, Attr_Target{window}),
+    Target(action, window),
     Instance(other, Windows),
     other != window.
 

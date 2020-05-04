@@ -8,6 +8,7 @@ use differential_datalog::record::Record;
 use differential_datalog::DDlog;
 use logic_ddlog::api::HDDlog;
 use types::*;
+use types::Object;
 use value::Relations;
 use value::Value;
 
@@ -23,42 +24,24 @@ extern crate serde_derive;
 pub struct Flamingo {
     hddlog: HDDlog,
 }
+enum Cmd {
+    Add,
+    Remove
+}
 
-fn new_object_to_cmd(new_object: NewObject, add: bool) -> Vec<Update<ddval::DDValue>> {
-    let obj_val = Value::Object(new_object.object).into_ddvalue();
-    
-    let obj = vec![if add {
-        Update::Insert {
+fn new_object_to_cmd(new_object: Object, cmd_type: Cmd) -> Vec<Update<ddval::DDValue>> {
+    let obj_val = Value::Object(new_object).into_ddvalue();
+    let cmd = match cmd_type {
+        Cmd::Add => Update::InsertOrUpdate {
+            relid: Relations::Object as RelId,
+            v: obj_val,
+        },
+        Cmd::Remove => Update::DeleteValue {
             relid: Relations::Object as RelId,
             v: obj_val,
         }
-    } else {
-        Update::DeleteValue {
-            relid: Relations::Object as RelId,
-            v: obj_val,
-        }
-    }];
-    let attributes = new_object
-        .attributes
-        .iter()
-        .map(|a| {
-            if add {
-                Update::Insert {
-                    relid: Relations::Attribute as RelId,
-                    v: Value::Attribute(a.clone()).into_ddvalue(),
-                }
-            } else {
-                Update::DeleteValue {
-                    relid: Relations::Attribute as RelId,
-                    v: Value::Attribute(a.clone()).into_ddvalue(),
-                }
-            }
-        })
-        .collect();
-
-    let all = vec![obj, attributes];
-
-    all.concat()
+    };
+    vec![cmd]
 }
 
 // These match the values
@@ -69,16 +52,16 @@ struct StateChange {
 }
 
 impl Flamingo {
-    fn add(&self, new_object: NewObject) {
-        let cmds = new_object_to_cmd(new_object, true);
+    fn add(&self, new_object: Object) {
+        let cmds = new_object_to_cmd(new_object, Cmd::Add);
         self.hddlog.transaction_start().unwrap();
         self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
         self.hddlog.transaction_commit().unwrap();
     }
 
-    fn dispatch(&self, action: NewObject) -> Vec<StateChange> {
+    fn dispatch(&self, action: Object) -> Vec<StateChange> {
         ///////////// Phase 1: Add Action //////////////////
-        let action_cmds = new_object_to_cmd(action.clone(), true);
+        let action_cmds = new_object_to_cmd(action.clone(), Cmd::Add);
         self.hddlog.transaction_start().unwrap();
         self.hddlog
             .apply_valupdates(action_cmds.into_iter())
@@ -107,7 +90,7 @@ impl Flamingo {
             })
             .collect();
 
-        let delete_action_cmds = new_object_to_cmd(action.clone(), false);
+        let delete_action_cmds = new_object_to_cmd(action.clone(), Cmd::Remove);
         let all_cmds = vec![outfluent_cmds, delete_action_cmds];
         // Transact the new InFluents
         self.hddlog.transaction_start().unwrap();
@@ -155,7 +138,7 @@ declare_types! {
 
         method add(mut cx) {
             let arg0 = cx.argument::<JsValue>(0)?;
-            let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;
+            let arg0_value: Object = neon_serde::from_value(&mut cx, arg0)?;
             let this = cx.this();
             let guard = cx.lock();
             this.borrow(&guard).add(arg0_value);
@@ -164,7 +147,7 @@ declare_types! {
 
         method dispatch(mut cx) {
             let arg0 = cx.argument::<JsValue>(0)?;
-            let arg0_value: NewObject = neon_serde::from_value(&mut cx, arg0)?;
+            let arg0_value: Object = neon_serde::from_value(&mut cx, arg0)?;
             let this = cx.this();
             let guard = cx.lock();
             let results = this.borrow(&guard).dispatch(arg0_value);
