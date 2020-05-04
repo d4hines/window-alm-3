@@ -48,6 +48,7 @@ typedef Node = Universe
     | Open_Window
     | Move
     | Set_Monitor_Bounds
+    | Toggle_Grouping
 
 #[rust="serde(untagged)"]
 typedef AttributeValue = Attr_Width{width: s64}
@@ -59,35 +60,35 @@ typedef AttributeValue = Attr_Width{width: s64}
     | Attr_Monitor_Y{monitor_y: s64}
     | Attr_Monitor{monitor: OID}
 
-output relation Width(oid: OID, value: s64)
+relation Width(oid: OID, value: s64)
 Width(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Width{var x}} = map_get(attributes, "width").
 
-output relation Height(oid: OID, value: s64)
+relation Height(oid: OID, value: s64)
 Height(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Height{var x}} = map_get(attributes, "height").
 
-output relation Target(oid: OID, value: OID)
+relation Target(oid: OID, value: OID)
 Target(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Target{var x}} = map_get(attributes, "target").
 
-output relation Magnitude_X(oid: OID, value: s64)
+relation Magnitude_X(oid: OID, value: s64)
 Magnitude_X(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Magnitude_X{var x}} = map_get(attributes, "magnitude_x").
 
-output relation Magnitude_Y(oid: OID, value: s64)
+relation Magnitude_Y(oid: OID, value: s64)
 Magnitude_Y(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Magnitude_Y{var x}} = map_get(attributes, "magnitude_y").
 
-output relation Monitor_X(oid: OID, value: s64)
+relation Monitor_X(oid: OID, value: s64)
 Monitor_X(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Monitor_X{var x}} = map_get(attributes, "monitor_x").
 
-output relation Monitor_Y(oid: OID, value: s64)
+relation Monitor_Y(oid: OID, value: s64)
 Monitor_Y(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Monitor_Y{var x}} = map_get(attributes, "monitor_y").
 
-output relation Monitor(oid: OID, value: OID)
+relation Monitor(oid: OID, value: OID)
 Monitor(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Monitor{var x}} = map_get(attributes, "monitor").
 
@@ -95,6 +96,7 @@ Monitor(oid, x) :- Object(oid, _, attributes),
 Link(Window_Action, Actions).
 Link(Set_Monitor_Bounds, Actions).
 Link(Open_Window, Window_Action).
+Link(Toggle_Grouping, Window_Action).
 Link(Move, Window_Action).
 Link(Rectangles, Universe).
 Link(Monitors, Rectangles).
@@ -131,6 +133,7 @@ relation Not_Closest(_1: OID, _2: OID)
 relation Closest(_1: OID, _2: OID)
 relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+relation 
 
 // Bundle of all the output fluents
 #[rust="serde(untagged)"]

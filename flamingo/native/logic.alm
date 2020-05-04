@@ -16,11 +16,12 @@ module Window_demo
         Move :: Window_Action
             attributes
                 Magnitude : Axis -> Integers
-        Set_Monitor_Bounds
+        Set_Monitor_Bounds :: Actions
             attributes
                 Monitor : Monitors,
                 Monitor_X : Integers
                 Monitor_Y : Integers
+        Toggle_Grouping :: Window_Action
     statics
         Opposite_Direction : Directions -> Directions.
         Opposite_Axis : Axes -> Axes
@@ -49,6 +50,7 @@ module Window_demo
             Closest : Windows x Rectangles -> Booleans
             Nearest_Side : Windows x Rectangles x Directions -> Booleans
             Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
+            Connected : Windows x Windows x -> Booleans
     axioms
         Snapping_Threshold = 30
         Corner_Snapping_Threshold = 30.
