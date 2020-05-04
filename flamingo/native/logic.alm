@@ -1,7 +1,8 @@
 module Window_demo
-    sorts
+    enums
         Axes :: { X, Y }
         Directions :: { DLeft, DRight, DTop, DBottom }
+    sorts
         Rectangles :: Universe
             attributes
                 Width : Integers
@@ -15,6 +16,11 @@ module Window_demo
         Move :: Window_Action
             attributes
                 Magnitude : Axis -> Integers
+        Set_Monitor_Bounds
+            attributes
+                Monitor : Monitors,
+                Monitor_X : Integers
+                Monitor_Y : Integers
     statics
         Opposite_Direction : Directions -> Directions.
         Opposite_Axis : Axes -> Axes
@@ -35,6 +41,7 @@ module Window_demo
             output Final_Coordinate : Windows x Axes x Integers -> Booleans
             Not_Snapped : Windows x Rectangles -> Booleans
             output Snapped : Windows x Rectangles -> Booleans
+            Not_Snapped_To_Corner : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
             Predistance : Windows x Rectanglest x Integers -> Booleans
             Not_Distance : Windows x Rectangles x Integers -> Booleans
@@ -44,8 +51,8 @@ module Window_demo
             Nearest_Side : Windows x Rectangles x Directions -> Booleans
             Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
     axioms
-        Snapping_Threshold = 20
-        Corner_Snapping_Threshold = 20.
+        Snapping_Threshold = 30
+        Corner_Snapping_Threshold = 30.
 
         Opposite_Direction(DLeft) = DRight.
         Opposite_Direction(DTop) = DBottom.
@@ -153,40 +160,35 @@ module Window_demo
         occurs(action) causes Coordinate(a, X) = 0 if
             Instance(action, Open_Window),
             Target(action) = a.
-        
+
         occurs(action) causes Coordinate(a, Y) = 0 if
            Instance(Action, Open_Window),
            Target(action) = a.
         
-        Nearest_Side(a, b, dir) if
-            Instance(a, Windows),
-            Instance(b, Windows),
-            Side(a, dir, edge_a),
-            Opposite_Direction(dir) = dir',
-            Side(b, dir', edge_b),
-            Distance(a, b) = d,
-            edge_a - edge_b == d.
-        
-        Nearest_Side(w, m, dir) if
-            Instance(w, Windows),
-            Instance(m, Monitors),
-            Side(w, dir, edge_w),
-            Side(m, dir, edge_m),
-            Distance(w, m) = d,
-            var d' = edge_w - edge_m.
-            d == d'.
+        occurs(action) causes Coordinate(m, X) = x if
+            Instance(action, Set_Monitor_Bounds),
+            Monitor(action) = m,
+            Monitor_X(action) = x.
 
-        Nearest_Side(a, b, dir) if
-            Opposite_Direction(dir) = dir',
-            Nearest_Side(b, a, dir').
+        occurs(action) causes Coordinate(m, Y) = y if
+            Instance(action, Set_Monitor_Bounds),
+            Monitor(action) = m,
+            Monitor_Y(action) = y.
         
-        occurs(action) causes Coordinate(window, axis, new_coord) if
+        occurs(action) causes Coordinate(window, X, new_coord) if
             Instance(action, Move),
             Target(action) = window,
-            Magnitude(action, axis) = m,
-            Coordinate(window, axis) = coord,
+            Magnitude_X(action) = m,
+            Coordinate(window, X) = coord,
             new_coord = coord + m.
-            
+
+        occurs(action) causes Coordinate(window, Y, new_coord) if
+            Instance(action, Move),
+            Target(action) = window,
+            Magnitude_Y(action) = m,
+            Coordinate(window, Y) = coord,
+            new_coord = coord + m.   
+
         occurs(action) causes Moving(window) = true if
             Instance(action, Move),
             Target(action) = window.
@@ -207,6 +209,18 @@ module Window_demo
             Moving(a) = true,
             Attracts(a, b, dir),
             -Not_Snapped(a, b).
+         
+        Not_Snapped_To_Corner(a, b) if
+            Snapped(a, b),
+            Nearest_Side(a, b, dir),
+            Axis(dir, ax),
+            Opposite_Axis(ax) = ax'
+            Nearest_Corner(a, b, dir, dir'),
+            Side(a, dir', side_a),
+            Side(b, dir', side_b),
+            |side_a - side_b| < Corner_Snapping_Threshold,
+            Opposite_Direction(dir') = opposite_dir,
+            Nearest_Corner(a, b, opposite_dir, _).
 
         Snapped_To_Corner(a, ax', new_coord) if
             Snapped(a, b),
@@ -216,7 +230,9 @@ module Window_demo
             Nearest_Corner(a, b, dir, dir'),
             Side(a, dir') = side_a,
             Side(b, dir') = side_b,
-            |side_a - side_b| < Corner_Snapping_Threshold().
+            |side_a - side_b| < Corner_Snapping_Threshold,
+            Opposite_Direction(dir') = opposite_dir,
+            Nearest_Corner(a, b, opposite_dir, _).
     
         Final_Coordinate(a, ax, new_coord) if
            Snapped(a, b),
@@ -225,7 +241,7 @@ module Window_demo
            Axis(dir) = ax,
            Coordinate(a, ax) = coord,
            Direction_Factor(dir) = f,
-           var new_coord = coord + d * f.
+           new_coord = coord + d * f.
            
         Final_Coordinate(a, ax', new_coord) if
            Snapped(a, b),
@@ -237,7 +253,7 @@ module Window_demo
            Coordinate(a, ax') = coord,
            Side(a, dir') = side_a,
            Side(b, dir') = side_b,
-           var new_coord = coord + (side_b - side_a).
+           new_coord = coord + (side_b - side_a).
 
         Final_Coordinate(a, ax', coord) if
             Snapped(a, b),
@@ -250,7 +266,6 @@ module Window_demo
         Not_Final_Coordinate(window, axis, coord) if
             Coordinate(window, axis) = coord,
             Snapped(window, other).
-        
 
         Final_Coordinate(window, axis, coord) if
             Coordinate(window, axis) = coord,
@@ -269,7 +284,10 @@ module Window_demo
             Opposite_Direction(dir) = dir',
             Side(b, dir', edge_b),
             Distance(a, b) = d,
-            edge_a - edge_a == d.
+            edge_a - edge_a == d,
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            On_Same_Line(a, b, ax').
         
         Nearest_Side(w, m, dir) if
             Instance(w, Windows),
@@ -277,7 +295,10 @@ module Window_demo
             Side(w, dir, edge_w),
             Side(m, dir, edge_m),
             Distance(w, m) = d,
-            edge_w - edge_m == d.
+            edge_w - edge_m == d,
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            On_Same_Line(w, m, ax').
                
         Nearest_Side(a, b, dir) if
             Opposite_Direction(dir) = dir',
