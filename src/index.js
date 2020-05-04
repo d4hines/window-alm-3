@@ -69,7 +69,7 @@ const createWindow = ({ width, height }) => {
         .forEach(({ value: [target, axis, coord] }) => {
           const browserID = oidToBrowserWindowID.get(target);
           const browserWindow = BrowserWindow.fromId(browserID);
-          browserWindow.setBounds({ [axis.toLowerCase()]: coord });
+          browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
         });
     }), 32);
   });
