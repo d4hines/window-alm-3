@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { debounce } = require("lodash");
-const { new_window, move, open_window, parse_result } = require("./convert");
 const { Flamingo } = require("../flamingo/lib");
 
 const WM_MOUSEMOVE = 0x200
@@ -14,10 +13,7 @@ const oidToBrowserWindowID = new Map();
 // collisions in our object ids.
 let nextOID = 0;
 
-const createWindow = () => {
-  const width = 800;
-  const height = 600;
-
+const createWindow = ({ width, height }) => {
   // Create the browser window.
   const win = new BrowserWindow({
     width,
@@ -36,11 +32,17 @@ const createWindow = () => {
   oidToBrowserWindowID.set(windowOID, win.id);
 
   // Add the window to the Flamingo domain.
-  flamingo.add(new_window(windowOID, width, height));
+  flamingo.add({
+    type: "Flamingo/Windows",
+    payload: { oid: windowOID, width, height }
+  });
 
   // Dispatch an Open_Window action to initialize it.
   const openOID = nextOID++;
-  flamingo.dispatch(open_window(openOID, windowOID));
+  flamingo.dispatch({
+    type: "Flamingo/Open_Window",
+    payload: { oid: openOID, target: windowOID }
+  });
 
   ipcMain.on("dragStart", () => {
     let { x: oldMouseX, y: oldMouseY } = screen.getCursorScreenPoint();
@@ -50,8 +52,15 @@ const createWindow = () => {
       oldMouseX = newMouseX;
       oldMouseY = newMouseY;
       const moveOID = nextOID++;
-      const results = flamingo.dispatch(move(moveOID, windowOID, xDiff, yDiff))
-        .map(parse_result)
+      const results = flamingo.dispatch({
+        type: "Flamingo/Move",
+        payload: {
+          oid: moveOID,
+          target: windowOID,
+          magnitude_x: xDiff,
+          magnitude_y: yDiff,
+        }
+      })
         .filter(({ type, op }) => type === "final_coordinate" && op === 1);
       // In a real app, this would be somewhere else, as part
       // of a dedicated "effects" module. Notice that it doesn't
@@ -71,6 +80,23 @@ const createWindow = () => {
 };
 
 app.on('ready', () => {
-  createWindow();
-  createWindow();
+  // Add the monitors to Flamingo's database.
+  for (const { bounds: { x, y, width, height } } of screen.getAllDisplays()) {
+    const monitorOID = nextOID++;
+    flamingo.add({
+      type: "Flamingo/Monitors",
+      payload: { oid: monitorOID, width, height }
+    });
+    // Once added to Flamingo, we have to dispatch an action to initialize
+    // their coordinates. In this future, this will accept width and height
+    // as well, since they can change, but for this demo they're assumed static.
+    flamingo.dispatch({
+      type: "Flamingo/Set_Monitor_Bounds",
+      payload: { oid: nextOID++, monitor: monitorOID, monitor_x: x, monitor_y: y },
+    });
+  }
+
+  // Create two windows to play with
+  createWindow({ width: 800, height: 600 });
+  createWindow({ width: 500, height: 500 });
 });
