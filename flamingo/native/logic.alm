@@ -16,7 +16,7 @@ module Window_demo
         Move :: Window_Action
             attributes
                 Magnitude : Axis -> Integers
-        Set_Monitor_Bounds
+        Set_Monitor_Bounds :: Window_Action
             attributes
                 Monitor : Monitors,
                 Monitor_X : Integers
