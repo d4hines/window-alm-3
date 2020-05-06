@@ -40,7 +40,7 @@ const groupIcon = (a, b, op = 1) => ({
     value: [a, b]
 });
 
-describe.only("Groups", () => {
+describe("Groups", () => {
     let flamingo;
     beforeEach(() => {
         // This spins up a new Flamingo database (in memory)
@@ -55,7 +55,6 @@ describe.only("Groups", () => {
         // but for now it needs the extra help.
         const dispatch = Flamingo.prototype.dispatch;
         flamingo.dispatch = (...args) => {
-            const { type } = args[0];
             const results = dispatch.apply(flamingo, args);
             // Narrow the results to just the insertions of final_coordinates
             const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);

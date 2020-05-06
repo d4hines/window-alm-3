@@ -403,6 +403,7 @@ Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(b, a, dir),
     Attracts(c, a, dir__prime),
+    b != c,
     dir__prime != dir.
 
 Snapped(a, b) :-
