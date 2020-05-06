@@ -178,7 +178,8 @@ OutFluent(Param_Grouped_With{1, 2}, Value_Grouped_With{true}) :-
     Instance(action, Toggle_Grouping).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
-    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
+    Instance(action, Toggle_Grouping),
+    Snapped(a, b).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
     OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
