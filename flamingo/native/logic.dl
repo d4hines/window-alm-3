@@ -159,7 +159,7 @@ Output(Out_Group{(a, b)}) :- OutFluent(Param_Grouped_With{a, b}, Value_Grouped_W
 Output(Out_Group{(a, b)}) :- InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
 Output(Out_Nearest_Side{nearest_side}) :- Nearest_Side[nearest_side].
 Output(Out_Moving{(window, true)}) :- InFluent(Param_Moving{window}, Value_Moving{true}).
-Output(Out_Predistance{predistance}) :- Predistance[predistance].
+//Output(Out_Predistance{predistance}) :- Predistance[predistance].
 Output(Out_Coordinate{(window, axis, coord)}) :- InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}).
 Output(Out_Snapped_To_Corner{snapped_to_corner}) :- Snapped_To_Corner[snapped_to_corner].
 Output(Out_Attracts{attracts}) :- Attracts[attracts].
@@ -174,8 +174,9 @@ function static_Snapping_Threshold(): s64 {
     30
 }
 
-OutFluent(Param_Grouped_With{2, 3}, Value_Grouped_With{true}) :-
-    Instance(action, Toggle_Grouping).
+OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
+    Instance(action, Toggle_Grouping),
+    Snapped(a, b).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
     OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
@@ -449,22 +450,6 @@ In_Snapped_Group(a) :-
 Final_Coordinate(a, axis, coord, "no snapping") :-
    InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
    not In_Snapped_Group(a).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
