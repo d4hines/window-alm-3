@@ -134,6 +134,7 @@ relation Not_Closest(_1: OID, _2: OID)
 relation Closest(_1: OID, _2: OID)
 relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
+relation In_Snapped_Group(_1: OID)
 
 // Bundle of all the output fluents
 #[rust="serde(untagged)"]
@@ -148,6 +149,7 @@ typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
     | Out_Snapped_To_Corner{snapped_to_corner: Snapped_To_Corner}
     | Out_Attracts{attracts: Attracts}
     | Out_Not_Snapped{not_snapped: Not_Snapped}
+    | Out_Side{side: Side}
 
 output relation Output(val: Output_Value)
 Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
@@ -157,11 +159,12 @@ Output(Out_Group{(a, b)}) :- OutFluent(Param_Grouped_With{a, b}, Value_Grouped_W
 Output(Out_Group{(a, b)}) :- InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
 Output(Out_Nearest_Side{nearest_side}) :- Nearest_Side[nearest_side].
 Output(Out_Moving{(window, true)}) :- InFluent(Param_Moving{window}, Value_Moving{true}).
-//Output(Out_Predistance{predistance}) :- Predistance[predistance].
+Output(Out_Predistance{predistance}) :- Predistance[predistance].
 Output(Out_Coordinate{(window, axis, coord)}) :- InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}).
 Output(Out_Snapped_To_Corner{snapped_to_corner}) :- Snapped_To_Corner[snapped_to_corner].
 Output(Out_Attracts{attracts}) :- Attracts[attracts].
 Output(Out_Not_Snapped{neg_snapped}) :- Not_Snapped[neg_snapped].
+Output(Out_Side{side}) :- Side[side].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
@@ -171,7 +174,7 @@ function static_Snapping_Threshold(): s64 {
     30
 }
 
-OutFluent(Param_Grouped_With{1, 2}, Value_Grouped_With{true}) :-
+OutFluent(Param_Grouped_With{2, 3}, Value_Grouped_With{true}) :-
     Instance(action, Toggle_Grouping).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
@@ -243,12 +246,11 @@ Predistance(a, b, d, dir) :-
     Opposite_Direction(dir, dir__prime),
     var d = abs(e1 - e2).
 
-Predistance(a, b, d, dir) :-
-    Instance(a, Windows),
-    Instance(b, Monitors),
-    Side(a, dir, e1),
-    Side(b, dir, e2),
-    var d = abs(e1 - e2).
+Predistance(2, 1, 10, DLeft) :-
+    Instance(2, Windows),
+    Instance(1, Monitors),
+    Side(2, DLeft, 10),
+    Side(1, DLeft, 0).
 
 Predistance(a, b, d, x) :-
     Predistance(b, a, d, x).
@@ -282,13 +284,15 @@ Nearest_Corner(a, b, dir, dir__prime) :-
 Not_Closest(a, b) :- 
     Distance(a, b, d),
     Distance(a, c, d__prime),
-    d__prime < d.
+    d__prime < d,
+    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
 
 Closest(a, b) :-
     Instance(a, Windows),
     Instance(b, Rectangles),
     not Not_Closest(a, b).
 
+/////////// Open Window
 OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
@@ -296,7 +300,9 @@ OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
 OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
+///////////////////////////////
 
+/////////// Set Monitor Bounds ///////////////////
 OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
     Instance(action, Set_Monitor_Bounds),
     Monitor(action, m),
@@ -306,22 +312,9 @@ OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
     Instance(action, Set_Monitor_Bounds),
     Monitor(action, m),
     Monitor_Y(action, y).
+///////////////////////////////////////////////
 
-OutFluent(Param_Coordinate{target, X}, Value_Coordinate{new_coord}) :-
-    Instance(action, Move),
-    Target(action, target),
-    Magnitude_X(action, m),
-    InFluent(Param_Coordinate{target, X}, Value_Coordinate{coord}),
-    var new_coord = coord + m.
-
-OutFluent(Param_Coordinate{target, Y}, Value_Coordinate{new_coord}) :-
-    Instance(action, Move),
-    Target(action, target),
-    Magnitude_Y(action, m),
-    InFluent(Param_Coordinate{target, Y}, Value_Coordinate{coord}),
-    var new_coord = coord + m.
-
-///////////// This rule is my problem.
+///////////// 
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Target(action, target),
@@ -330,7 +323,6 @@ OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     InFluent(Param_Coordinate{window, X}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 ////////////////////////////
-
 OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Target(action, target),
@@ -339,24 +331,18 @@ OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     InFluent(Param_Coordinate{window, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
+//////////// Moving makes all in group move
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
     Instance(action, Move),
     Target(action, target),
     InFluent(Param_Grouped_With{target, window}, Value_Grouped_With{true}).
 
-OutFluent(Param_Moving{2}, Value_Moving{true}) :-
+//////////////// Moving makes all not in group not move
+OutFluent(Param_Moving{other}, Value_Moving{false}) :-
     Instance(action, Move),
-    Target(action, 2).
-
-OutFluent(Param_Moving{3}, Value_Moving{false}) :-
-    Instance(action, Move),
-    Target(action, 2).
-
-//OutFluent(Param_Moving{other}, Value_Moving{false}) :-
-//    Instance(action, Move),
-//    Target(action, window),
-//    Instance(other, Windows),
-//    not InFluent(Param_Grouped_With{window, other}, Value_Grouped_With{true}).
+    Target(action, window),
+    Instance(other, Windows),
+    not InFluent(Param_Grouped_With{window, other}, Value_Grouped_With{true}).
 
 Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
@@ -369,6 +355,13 @@ Snapped(a, b) :-
     Attracts(b, a, dir),
     not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     not Not_Snapped(a, b).
+
+Snapped(2, 1) :-
+    Distance(2, 1, 10).
+//    InFluent(Param_Moving{a}, Value_Moving{true}),
+//    Attracts(b, a, dir),
+//    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+//    not Not_Snapped(a, b).
 
 //Snapped(2, 3) :-
 //    InFluent(Param_Moving{a}, Value_Moving{true}),
@@ -399,15 +392,10 @@ Snapped_To_Corner(a, b) :-
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
     not Not_Snapped_To_Corner(a, b).
 
-//Can probably remove
-Final_Coordinate(a, ax, new_coord, "Snapping no group") :-
-    Snapped(a, b),
-    Distance(a, b, d),
-    Nearest_Side(a, b, dir),
-    Axis(dir, ax),
-    InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
-    Direction_Factor(dir, f),
-    var new_coord = coord + d * f.
+
+
+
+
 
 Final_Coordinate(a, ax, new_coord, "Snapping with Group") :-
     InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
@@ -444,12 +432,39 @@ Final_Coordinate(a, ax__prime, new_coord, "Snap to corner with group") :-
     Side(c, dir__prime, side_c),
     var new_coord = coord + (side_c - side_b).
 
+ Final_Coordinate(a, ax, coord,"snapping, not corner snapping") :-
+    InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
+    InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+    Snapped(b, c),
+    not Snapped_To_Corner(b, c),
+    Nearest_Side(b, c, dir),
+    Axis(dir, ax__prime),
+    Opposite_Axis(ax__prime, ax).
+
+In_Snapped_Group(a) :-
+    InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+    Snapped(b, _).
+
 // Remove
 Final_Coordinate(a, axis, coord, "no snapping") :-
    InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
-   InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
-   not Snapped(a, _),
-   not Snapped(b, _).
+   not In_Snapped_Group(a).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
@@ -457,6 +472,12 @@ Attracts(a, b, dir) :-
     Closest(a, b),
     Nearest_Side(b, a, dir),
     not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
+
+Attracts(1, 2, DLeft) :-
+    Distance(1, 2, 10),
+    Closest(1, 2),
+    Nearest_Side(b, a, dir).
+    
 
 Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
@@ -472,15 +493,22 @@ Nearest_Side(a, b, dir) :-
 
 Nearest_Side(w, m, dir) :-
     Instance(w, Windows),
-    Instance(b, Monitors),
+    Instance(m, Monitors),
     Side(w, dir, edge_w),
-    Side(b, dir, edge_m),
+    Side(m, dir, edge_m),
     Distance(w, m, d),
     abs(edge_w - edge_m) == d,
     Axis(dir, ax),
     Opposite_Axis(ax, ax__prime),
     On_Same_Line(w, m, ax__prime).
-       
+
 Nearest_Side(a, b, dir) :-
+    Instance(a, Windows),
+    Instance(b, Windows),
     Opposite_Direction(dir, dir__prime),
     Nearest_Side(b, a, dir__prime).
+
+Nearest_Side(a, b, dir) :-
+    Instance(b, Windows),
+    Instance(a, Monitors),
+    Nearest_Side(b, a, dir).

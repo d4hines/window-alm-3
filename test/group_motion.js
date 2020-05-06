@@ -50,7 +50,9 @@ describe.only("Group Motion", () => {
             // Narrow the results to just the insertions of final_coordinates
             const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
             for (const i of insertions) {
+                console.log(i.value);
                 i.value.pop();
+                console.log(i.value);
                 const { value: [id, axis] } = i;
                 // For each final_coordinate, look for others with the same window and axis.
                 const others = insertions
@@ -277,7 +279,7 @@ describe.only("Group Motion", () => {
         });
     });
 
-    describe.skip("Snapping to sides of monitors", () => {
+    describe("Snapping to sides of monitors", () => {
         beforeEach(() => {
             // We're going to be working with a monitor called 1.
             // It's the primary, so it starts at (0,0), and has a
@@ -288,12 +290,6 @@ describe.only("Group Motion", () => {
                 type: "Flamingo/Monitors",
                 payload: { oid: 1, width: 800, height: 600 }
             });
-            // Initialize monitor coords.
-            flamingo.dispatch({
-                type: "Flamingo/Set_Monitor_Bounds",
-                payload: { oid: 4, monitor: 1, monitor_x: 0, monitor_y: 0 },
-            });
-
             // We'll also be working with two windows, called 2 and 3.
             // Both windows have a width and height of 100. Their coords
             // are (0,0) and (100, 0), respectively.
@@ -305,6 +301,12 @@ describe.only("Group Motion", () => {
                 type: "Flamingo/Windows",
                 payload: { oid: 3, width: 100, height: 100 }
             });
+
+            // Initialize monitor coords.
+            flamingo.dispatch({
+                type: "Flamingo/Set_Monitor_Bounds",
+                payload: { oid: 4, monitor: 1, monitor_x: 0, monitor_y: 0 },
+            });
             // Initialize the windows
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
@@ -315,17 +317,17 @@ describe.only("Group Motion", () => {
                 payload: { oid: 6, target: 3 },
             });
 
-            // Move window 2 to its starting positions
+            // Move window 3 to its starting positions
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 7, target: 2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { oid: 7, target: 3, magnitude_x: 100, magnitude_y: 0 },
             });
 
             // Group 1 and 2 together.
             flamingo.dispatch({
                 type: "Flamingo/Toggle_Grouping",
-                // You could target either 1 or 2 here.
-                payload: { oid: 6, target: 2 },
+                // You could target either 2 or 3 here.
+                payload: { oid: 8, target: 2 },
             });
         });
 
