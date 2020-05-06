@@ -316,6 +316,21 @@ OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
 ///////////////////////////////////////////////
 
 ///////////// 
+OutFluent(Param_Coordinate{target, X}, Value_Coordinate{new_coord}) :-
+    Instance(action, Move),
+    Target(action, target),
+    Magnitude_X(action, m),
+    InFluent(Param_Coordinate{target, X}, Value_Coordinate{coord}),
+    var new_coord = coord + m.
+
+OutFluent(Param_Coordinate{target, Y}, Value_Coordinate{new_coord}) :-
+    Instance(action, Move),
+    Target(action, target),
+    Magnitude_Y(action, m),
+    InFluent(Param_Coordinate{target, Y}, Value_Coordinate{coord}),
+    var new_coord = coord + m.
+
+///////////// This rule is my problem.
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Target(action, target),
