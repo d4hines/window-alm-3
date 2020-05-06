@@ -5,7 +5,7 @@ const { Flamingo } = require("../flamingo/lib");
  * Utility function for generating Final_Coordinate data
  * which is returned by Flamingo after move actions.
 */
-const finalCoordinate = (windowID, axis, coord) => ({
+const finalCoordinate = (windowID, axis, coord, op = 1) => ({
   type: "final_coordinate",
   // This tuple matches the function signature defined in the ALM program: 
   // "Final_Coordinate : Windows x Axes -> Integers"
@@ -14,15 +14,15 @@ const finalCoordinate = (windowID, axis, coord) => ({
   value: [windowID, axis, coord],
   // The op value says whether the fact was added or removed.
   // A 1 says this fact became true(-1 would mean it became false)
-  op: 1
+  op,
 });
 
 /**
  * Utility function for generating Snapped data
  * which is returned by Flamingo after move actions.
  */
-const snapped = (a, b) => ({
-  op: 1,
+const snapped = (a, b, op = 1) => ({
+  op,
   type: "snapped",
   value: [a, b]
 });
