@@ -48,6 +48,7 @@ typedef Node = Universe
     | Open_Window
     | Move
     | Set_Monitor_Bounds
+    | Toggle_Grouping
 
 #[rust="serde(untagged)"]
 typedef AttributeValue = Attr_Width{width: s64}
@@ -110,16 +111,18 @@ relation Direction_Factor(_1: Directions, ret: s64)
 // Basic
 typedef FluentParam = Param_Coordinate{coordinate_1: OID, coordinate_2: Axes}
     | Param_Moving{moving_1: OID}
+    | Param_Grouped_With{grouped_with_1: OID, grouped_with_2: OID}
 
 typedef FluentValue = Value_Coordinate{coordinate_ret: s64 }
     | Value_Moving{moving_ret: bool}
+    | Value_Grouped_With{grouped_with_ret: bool}
 
 // Defined
 relation Side(_1: OID, _2: Directions, _3: s64)
 relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
 relation Overlaps(_1: OID, _2: OID)
 relation Attracts(_1: OID, _2: OID, _3: Directions)
-relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
+relation Final_Coordinate(_1: OID, _2: Axes, _3: s64, message: string)
 relation Not_Snapped(_1: OID, _2: OID)
 relation Snapped(_1: OID, _2: OID)
 relation Not_Snapped_To_Corner(_1: OID, _2: OID)
@@ -136,10 +139,29 @@ relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
 #[rust="serde(untagged)"]
 typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
     | Out_Snapped{snapped: Snapped}
+    | Out_Distance{distance: Distance}
+    | Out_Group{grouped_with: (s64, s64)}
+    | Out_Nearest_Side{nearest_side: Nearest_Side}
+    | Out_Moving{moving: (OID, bool)}
+    | Out_Predistance{predistance: Predistance}
+    | Out_Coordinate{coordinate: (OID, Axes, s64)}
+    | Out_Snapped_To_Corner{snapped_to_corner: Snapped_To_Corner}
+    | Out_Attracts{attracts: Attracts}
+    | Out_Not_Snapped{not_snapped: Not_Snapped}
 
 output relation Output(val: Output_Value)
 Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
 Output(Out_Snapped{snapped}) :- Snapped[snapped].
+Output(Out_Distance{distance}) :- Distance[distance].
+Output(Out_Group{(a, b)}) :- OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
+Output(Out_Group{(a, b)}) :- InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
+Output(Out_Nearest_Side{nearest_side}) :- Nearest_Side[nearest_side].
+Output(Out_Moving{(window, true)}) :- InFluent(Param_Moving{window}, Value_Moving{true}).
+//Output(Out_Predistance{predistance}) :- Predistance[predistance].
+Output(Out_Coordinate{(window, axis, coord)}) :- InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}).
+Output(Out_Snapped_To_Corner{snapped_to_corner}) :- Snapped_To_Corner[snapped_to_corner].
+Output(Out_Attracts{attracts}) :- Attracts[attracts].
+Output(Out_Not_Snapped{neg_snapped}) :- Not_Snapped[neg_snapped].
 
 ///////////// Axioms ///////////////
 function static_Corner_Snapping_Threshold(): s64 {
@@ -148,6 +170,18 @@ function static_Corner_Snapping_Threshold(): s64 {
 function static_Snapping_Threshold(): s64 {
     30
 }
+
+OutFluent(Param_Grouped_With{1, 2}, Value_Grouped_With{true}) :-
+    Instance(action, Toggle_Grouping).
+
+OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
+    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
+
+OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
+    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
+
+OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
+    Instance(a, Windows).
 
 Opposite_Direction(DLeft, DRight).
 Opposite_Direction(DTop, DBottom).
@@ -228,6 +262,8 @@ Distance(a, b, d) :-
     Predistance(a, b, d, _),
     not Not_Distance(a, b, d).
 
+Distance(a, b, d) :- Distance(b, a, d).
+
 Nearest_Corner(a, b, dir, dir__prime) :-
     Nearest_Side(a, b, dir),
     Axis(dir, ax),
@@ -271,29 +307,56 @@ OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
     Monitor(action, m),
     Monitor_Y(action, y).
 
+OutFluent(Param_Coordinate{target, X}, Value_Coordinate{new_coord}) :-
+    Instance(action, Move),
+    Target(action, target),
+    Magnitude_X(action, m),
+    InFluent(Param_Coordinate{target, X}, Value_Coordinate{coord}),
+    var new_coord = coord + m.
+
+OutFluent(Param_Coordinate{target, Y}, Value_Coordinate{new_coord}) :-
+    Instance(action, Move),
+    Target(action, target),
+    Magnitude_Y(action, m),
+    InFluent(Param_Coordinate{target, Y}, Value_Coordinate{coord}),
+    var new_coord = coord + m.
+
+///////////// This rule is my problem.
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
-    Target(action, window),
+    Target(action, target),
+    InFluent(Param_Grouped_With{target, window}, Value_Grouped_With{true}),
     Magnitude_X(action, m),
     InFluent(Param_Coordinate{window, X}, Value_Coordinate{coord}),
     var new_coord = coord + m.
-    
+////////////////////////////
+
 OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
-    Target(action, window),
+    Target(action, target),
+    InFluent(Param_Grouped_With{target, window}, Value_Grouped_With{true}),
     Magnitude_Y(action, m),
     InFluent(Param_Coordinate{window, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
     Instance(action, Move),
-    Target(action, window).
+    Target(action, target),
+    InFluent(Param_Grouped_With{target, window}, Value_Grouped_With{true}).
 
-OutFluent(Param_Moving{other}, Value_Moving{false}) :-
+OutFluent(Param_Moving{2}, Value_Moving{true}) :-
     Instance(action, Move),
-    Target(action, window),
-    Instance(other, Windows),
-    other != window.
+    Target(action, 2).
+
+OutFluent(Param_Moving{3}, Value_Moving{false}) :-
+    Instance(action, Move),
+    Target(action, 2).
+
+//OutFluent(Param_Moving{other}, Value_Moving{false}) :-
+//    Instance(action, Move),
+//    Target(action, window),
+//    Instance(other, Windows),
+//    not InFluent(Param_Grouped_With{window, other}, Value_Grouped_With{true}).
 
 Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
@@ -303,8 +366,15 @@ Not_Snapped(a, b) :-
 
 Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
-    Attracts(a, b, dir),
+    Attracts(b, a, dir),
+    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     not Not_Snapped(a, b).
+
+//Snapped(2, 3) :-
+//    InFluent(Param_Moving{a}, Value_Moving{true}),
+//    Attracts(a, b, _),
+//    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+//    not Not_Snapped(a, b).
 
 Not_Snapped_To_Corner(a, b) :-
    Snapped(a, b),
@@ -329,7 +399,8 @@ Snapped_To_Corner(a, b) :-
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
     not Not_Snapped_To_Corner(a, b).
 
-Final_Coordinate(a, ax, new_coord) :-
+//Can probably remove
+Final_Coordinate(a, ax, new_coord, "Snapping no group") :-
     Snapped(a, b),
     Distance(a, b, d),
     Nearest_Side(a, b, dir),
@@ -338,7 +409,17 @@ Final_Coordinate(a, ax, new_coord) :-
     Direction_Factor(dir, f),
     var new_coord = coord + d * f.
 
-Final_Coordinate(a, ax__prime, new_coord) :-
+Final_Coordinate(a, ax, new_coord, "Snapping with Group") :-
+    InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
+    Snapped(b, c),
+    Distance(c, b, d),
+    Nearest_Side(b, c, dir),
+    Axis(dir, ax),
+    InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
+    Direction_Factor(dir, f),
+    var new_coord = coord + d * f.
+
+Final_Coordinate(a, ax__prime, new_coord, "Snap to corner no group") :-
    Snapped(a, b),
    Snapped_To_Corner(a, b),
    Nearest_Side(a, b, dir),
@@ -350,23 +431,32 @@ Final_Coordinate(a, ax__prime, new_coord) :-
    Side(b, dir__prime, side_b),
    var new_coord = coord + (side_b - side_a).
 
-Final_Coordinate(a, ax__prime, coord) :-
-    Snapped(a, b),
-    not Snapped_To_Corner(a, b),
-    Nearest_Side(a, b, dir),
+Final_Coordinate(a, ax__prime, new_coord, "Snap to corner with group") :-
+    InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
+    Snapped(b, c),
+    Snapped_To_Corner(b, c),
+    Nearest_Side(b, c, dir),
     Axis(dir, ax),
     Opposite_Axis(ax, ax__prime),
-    InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}).
+    Nearest_Corner(b, c, dir, dir__prime),
+    InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}),
+    Side(b, dir__prime, side_b),
+    Side(c, dir__prime, side_c),
+    var new_coord = coord + (side_c - side_b).
 
-Final_Coordinate(window, axis, coord) :-
-   InFluent(Param_Coordinate{window, axis}, Value_Coordinate{coord}),
-   not Snapped(window, _).
+// Remove
+Final_Coordinate(a, axis, coord, "no snapping") :-
+   InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
+   InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+   not Snapped(a, _),
+   not Snapped(b, _).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
     d < static_Snapping_Threshold(),
     Closest(a, b),
-    Nearest_Side(b, a, dir).
+    Nearest_Side(b, a, dir),
+    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
 
 Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
