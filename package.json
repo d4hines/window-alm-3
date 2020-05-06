@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "install": "wsl ./fetch_ddlog.sh",
-    "pretest": "cd flamingo && neon build",
+    "pretest": "yarn build:ddlog && cd flamingo && neon build --release",
     "test": "mocha",
     "start": "electron-forge start",
     "package": "electron-forge package",

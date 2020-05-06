@@ -445,18 +445,6 @@ Final_Coordinate(a, ax, new_coord, "Snapping with Group") :-
     Direction_Factor(dir, f),
     var new_coord = coord + d * f.
 
-Final_Coordinate(a, ax__prime, new_coord, "Snap to corner no group") :-
-   Snapped(a, b),
-   Snapped_To_Corner(a, b),
-   Nearest_Side(a, b, dir),
-   Axis(dir, ax),
-   Opposite_Axis(ax, ax__prime),
-   Nearest_Corner(a, b, dir, dir__prime),
-   InFluent(Param_Coordinate{a, ax__prime}, Value_Coordinate{coord}),
-   Side(a, dir__prime, side_a),
-   Side(b, dir__prime, side_b),
-   var new_coord = coord + (side_b - side_a).
-
 Final_Coordinate(a, ax__prime, new_coord, "Snap to corner with group") :-
     InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
     Snapped(b, c),
@@ -483,10 +471,10 @@ In_Snapped_Group(a) :-
     InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     Snapped(b, _).
 
+
 Final_Coordinate(a, axis, coord, "no snapping") :-
    InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
-   InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
-   not Snapped(b, _).
+   not In_Snapped_Group(a).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),

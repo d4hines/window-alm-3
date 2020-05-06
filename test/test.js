@@ -42,22 +42,25 @@ describe('Window Motion', () => {
     // but for now it needs the extra help.
     const dispatch = Flamingo.prototype.dispatch;
     flamingo.dispatch = (...args) => {
-            const results = dispatch.apply(flamingo, args);
-            // Narrow the results to just the insertions of final_coordinates
-            const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
-            for (const i of insertions) {
-                i.value.pop();
-                const { value: [id, axis] } = i;
-                // For each final_coordinate, look for others with the same window and axis.
-                const others = insertions
-                    .filter(({ value: [otherID, otherAxis] }) => otherID === id && otherAxis === axis);
-                // If we find more than 1, there's a problem.
-                if (others.length > 1) {
-                    console.error(`Found multiple coordinates for window ${id} on axis ${axis}`)
-                }
-            }
-            return results;
+      const results = dispatch.apply(flamingo, args);
+      // Narrow the results to just the insertions of final_coordinates
+      const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
+      for (const i of insertions) {
+        i.value.pop();
+        const { value: [id, axis, coord] } = i;
+        // For each final_coordinate, look for others with the same window and axis.
+        const others = insertions
+          .filter(({ value: [otherID, otherAxis, otherCoord] }) =>
+            otherID === id
+            && otherAxis === axis
+            && coord !== otherCoord);
+        // If we find more than 1, there's a problem.
+        if (others.length > 1) {
+          throw new Error(`Found multiple coordinates for window ${id} on axis ${axis}`);
         }
+      }
+      return results;
+    }
   });
 
   afterEach(() => {
