@@ -123,7 +123,7 @@ relation Side(_1: OID, _2: Directions, _3: s64)
 relation On_Same_Line(_1: OID, _2: OID, _3: Axes)
 relation Overlaps(_1: OID, _2: OID)
 relation Attracts(_1: OID, _2: OID, _3: Directions)
-relation Final_Coordinate(_1: OID, _2: Axes, _3: s64, message: string)
+relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 relation Not_Snapped(_1: OID, _2: OID)
 relation Snapped(_1: OID, _2: OID)
 relation Not_Snapped_To_Corner(_1: OID, _2: OID)
@@ -435,7 +435,7 @@ Snapped_To_Corner(a, b) :-
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
     not Not_Snapped_To_Corner(a, b).
 
-Final_Coordinate(a, ax, new_coord, "Snapping with Group") :-
+Final_Coordinate(a, ax, new_coord) :-
     InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
     Snapped(b, c),
     Distance(c, b, d),
@@ -445,7 +445,7 @@ Final_Coordinate(a, ax, new_coord, "Snapping with Group") :-
     Direction_Factor(dir, f),
     var new_coord = coord + d * f.
 
-Final_Coordinate(a, ax__prime, new_coord, "Snap to corner with group") :-
+Final_Coordinate(a, ax__prime, new_coord) :-
     InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
     Snapped(b, c),
     Snapped_To_Corner(b, c),
@@ -458,7 +458,7 @@ Final_Coordinate(a, ax__prime, new_coord, "Snap to corner with group") :-
     Side(c, dir__prime, side_c),
     var new_coord = coord + (side_c - side_b).
 
- Final_Coordinate(a, ax, coord,"snapping, not corner snapping") :-
+ Final_Coordinate(a, ax, coord) :-
     InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
     InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     Snapped(b, c),
@@ -472,7 +472,7 @@ In_Snapped_Group(a) :-
     Snapped(b, _).
 
 
-Final_Coordinate(a, axis, coord, "no snapping") :-
+Final_Coordinate(a, axis, coord) :-
    InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
    not In_Snapped_Group(a).
 

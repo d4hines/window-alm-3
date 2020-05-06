@@ -59,7 +59,6 @@ describe("Groups", () => {
             // Narrow the results to just the insertions of final_coordinates
             const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
             for (const i of insertions) {
-                i.value.pop();
                 const { value: [id, axis, coord] } = i;
                 // For each final_coordinate, look for others with the same window and axis.
                 const others = insertions
