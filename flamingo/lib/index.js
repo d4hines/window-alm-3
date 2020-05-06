@@ -28,7 +28,6 @@ const parse_result = ({ val, op }) => {
         .keys(val[type])
         .sort()
         .map(x => val[type][x]);
-    console.log(type, value, op);
     return { type, value, op };
 }
 
@@ -38,12 +37,10 @@ class Flamingo {
     }
 
     add(object) {
-        console.log("////////// Add Object:", object.type);
         this.nativeFlamingo.add(parse_new_object(object));
     }
 
     dispatch(action) {
-        console.log(`/////////// Action: ${action.type}`);
         return this.nativeFlamingo
             .dispatch(parse_new_object(action))
             .map(parse_result);
