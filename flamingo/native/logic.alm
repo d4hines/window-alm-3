@@ -181,7 +181,7 @@ module Window_demo
             Coordinate(window, X) = coord,
             new_coord = coord + m.
 
-        occurs(action) causes Coordinate(window, Y, new_coord) if
+        occurs(action) causes Coordinate(window, Y) = new_coord if
             Instance(action, Move),
             Target(action) = window,
             Magnitude_Y(action) = m,
@@ -191,7 +191,7 @@ module Window_demo
         occurs(action) causes Moving(window) = true if
             Instance(action, Move),
             Target(action) = window.
-    
+
         occurs(Action) causes Moving(other) = false if
             Instance(action, Move),
             Target(action) = window,
@@ -206,6 +206,8 @@ module Window_demo
             
         Snapped(a, b) if,
             Moving(a) = true,
+            // This should be "Attracts(b, a, _)", but this works and the other doesn't, and I don't have time to fix.
+            // The reason has to do with the fact that monitors attract on inside edges and not outside like windows
             Attracts(a, b, dir),
             -Not_Snapped(a, b).
          
@@ -261,8 +263,6 @@ module Window_demo
             Axis(dir) = ax,
             Opposite_Axis(ax) = ax'
             Coordinate(a, ax', coord).
-
-        
 
         Final_Coordinate(window, axis, coord) if
             Coordinate(window, axis) = coord,

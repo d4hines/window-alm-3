@@ -56,6 +56,32 @@ impl Flamingo {
         let cmds = new_object_to_cmd(new_object, Cmd::Add);
         self.hddlog.transaction_start().unwrap();
         self.hddlog.apply_valupdates(cmds.into_iter()).unwrap();
+        let mut delta = self.hddlog.transaction_commit_dump_changes().unwrap();
+        let outfluents = delta.get_rel(Relations::OutFluent as RelId);
+        let outfluent_cmds: Vec<Update<ddval::DDValue>> = outfluents
+            .into_iter()
+            .map(|(val, _)| unsafe {
+                // The call to Value::OutFluent is unsafe.
+                let Value::OutFluent(outfluent_ref) = DDValConvert::from_ddvalue_ref(val);
+                let outfluent = outfluent_ref.clone();
+
+                let influent = InFluent {
+                    params: outfluent.params,
+                    ret: outfluent.ret,
+                };
+                // We use InsertOrUpdate so as to avoid duplcating fluent values (fluents are functions)
+                Update::InsertOrUpdate {
+                    relid: Relations::InFluent as RelId,
+                    v: Value::InFluent(influent).into_ddvalue(),
+                }
+            })
+            .collect();
+            self.hddlog.transaction_start().unwrap();
+
+        self.hddlog
+            .apply_valupdates(outfluent_cmds.into_iter())
+            .unwrap();
+        // This contains the new stable state.
         self.hddlog.transaction_commit().unwrap();
     }
 
