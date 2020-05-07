@@ -11,7 +11,7 @@ const parse_new_object = ({ type, payload }) => {
             // Due to the way it's serialized, every attribute
             // gets an extra level of nesting,
             // e.g. { height { height: 100 }}
-            prev[curr] = {[curr]: payload[curr]}
+            prev[curr] = { [curr]: payload[curr] }
             return prev;
         }, {});
 
