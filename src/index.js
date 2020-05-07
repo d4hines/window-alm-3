@@ -29,7 +29,14 @@ const createWindow = ({ width, height }) => {
   win.loadFile(path.join(__dirname, 'index.html'));
 
   const windowOID = nextOID++;
-  oidToBrowserWindowID.set(windowOID, win.id);
+  oidToBrowserWindowID.set(windowOID, [win.id, width, height]);
+
+  // We need to tell the window who it is.
+  // As a hack to get around the async nature of loading the window,
+  // we just wrap it in a timeout (not production worthy!).
+  setTimeout(() => {
+    win.webContents.send("oid", windowOID);
+  }, 1000);
 
   // Add the window to the Flamingo domain.
   flamingo.add({
@@ -52,7 +59,7 @@ const createWindow = ({ width, height }) => {
       oldMouseX = newMouseX;
       oldMouseY = newMouseY;
       const moveOID = nextOID++;
-      const results = flamingo.dispatch({
+      flamingo.dispatch({
         type: "Flamingo/Move",
         payload: {
           oid: moveOID,
@@ -60,24 +67,17 @@ const createWindow = ({ width, height }) => {
           magnitude_x: xDiff,
           magnitude_y: yDiff,
         }
-      })
-        .filter(({ type, op }) => type === "final_coordinate" && op === 1);
-      // In a real app, this would be somewhere else, as part
-      // of a dedicated "effects" module. Notice that it doesn't
-      // rely on any closures in the above scope.
-      results
-        .forEach(({ value: [target, axis, coord] }) => {
-          const browserID = oidToBrowserWindowID.get(target);
-          const browserWindow = BrowserWindow.fromId(browserID);
-          browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
-        });
+      });
     }), 32);
   });
 
   ipcMain.on("dragEnd", () => {
     win.unhookWindowMessage(WM_MOUSEMOVE);
   });
+
+  return windowOID;
 };
+
 
 app.on('ready', () => {
   // Add the monitors to Flamingo's database.
@@ -97,6 +97,29 @@ app.on('ready', () => {
   }
 
   // Create two windows to play with
-  createWindow({ width: 800, height: 600 });
-  createWindow({ width: 500, height: 500 });
+  createWindow({ width: 400, height: 400 });
+  createWindow({ width: 400, height: 600 });
+  createWindow({ width: 400, height: 400 });
+
+  flamingo.on("final_coordinate", ([target, axis, coord], op) => {
+    if (op === -1) return;
+    const [browserID, width, height] = oidToBrowserWindowID.get(target);
+    const browserWindow = BrowserWindow.fromId(browserID);
+    browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
+  });
+
+  flamingo.on("group_icon", ([target, icon], op) => {
+    if (op === -1) return;
+    const [browserID] = oidToBrowserWindowID.get(target);
+    const browserWindow = BrowserWindow.fromId(browserID);
+    browserWindow.webContents.send("group_icon", icon)
+  });
+
+  ipcMain.on("toggle_group", (_, target) => {
+    const foo = nextOID++;
+    flamingo.dispatch({
+      type: "Flamingo/Toggle_Grouping",
+      payload: { oid: foo, target }
+    });
+  });
 });

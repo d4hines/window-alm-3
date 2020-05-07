@@ -140,6 +140,10 @@ relation Connected(_1: OID, _2: OID)
 relation Not_In_Singleton_Group(_1: OID)
 relation Group_Icon(_1: OID, _2: Group_Icons)
 
+relation Final_Overlaps(_1: OID, _2: OID)
+relation Final_Side(_1: OID, _2: Directions, _3: s64)
+relation Final_On_Same_Line(_1: OID, _2: OID, _3: Axes)
+
 // Bundle of all the output fluents
 #[rust="serde(untagged)"]
 typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
@@ -162,8 +166,45 @@ function static_Snapping_Threshold(): s64 {
 Connected(a, b) :-
     Instance(a, Windows),
     Instance(b, Windows),
-    Distance(a, b, 0),
-    On_Same_Line(a, b, _).
+    not Final_Overlaps(a, b),
+    Final_On_Same_Line(a, b, axis),
+    Opposite_Axis(axis, axis__prime),
+    Axis(dir, axis__prime),
+    Final_Side(a, dir, e1),
+    Final_Side(b, dir__prime, e2),
+    Opposite_Direction(dir, dir__prime),
+    e1 - e2 == 0.
+
+Final_Side(rectangle, DLeft, value) :-
+    Final_Coordinate(rectangle, X, value).
+
+Final_Side(rectangle, DTop, value) :-
+    Final_Coordinate(rectangle, Y, value).
+
+Final_Side(rectangle, DRight, r_value) :-
+    Final_Side(rectangle, DLeft, l_value),
+    Width(rectangle, w),
+    var r_value = l_value + w.
+
+Final_Side(rectangle, DBottom, b_value) :-
+    Final_Side(rectangle, DTop, t_value),
+    Height(rectangle, h),
+    var b_value = t_value + h.
+
+Final_On_Same_Line(a, b, axis) :-
+    Final_Side(a, dir, a1),
+    Axis(dir, axis),
+    Opposite_Direction(dir, dir__prime),
+    Final_Side(a, dir__prime, a2),
+    Final_Side(b, dir, b1),
+    Final_Side(b, dir__prime, b2),
+    a != b,
+    a1 < b2,
+    a2 > b1.
+
+Final_Overlaps(a, b) :-
+    Final_On_Same_Line(a, b, X),
+    Final_On_Same_Line(a, b, Y).
 
 Connected(b, a) :- Connected(a, b).
 Connected(a, c) :-
@@ -174,6 +215,7 @@ OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :- Instance(a, Win
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
     Instance(action, Toggle_Grouping),
+    Target(action, a),
     Connected(a, b).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
@@ -182,6 +224,11 @@ OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
 OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
     Instance(a, Windows).
 
+OutFluent(Param_Coordinate{a,ax}, Value_Coordinate{coord}) :-
+    Instance(action, Toggle_Grouping),
+    Target(action, a),
+    Final_Coordinate(a, ax, coord).
+  
 Not_In_Singleton_Group(a) :-
     InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     a != b.

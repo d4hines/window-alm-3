@@ -1,25 +1,33 @@
 const { ipcRenderer } = require("electron");
 
-const setDragging = (dragging) => {
-    document
-        .getElementById("drag-state")
-        .textContent = dragging ? "BEING" : "NOT BEING";
-}
-
-const setBackgroundColor = (color) => {
-    document.body.style.backgroundColor = color
-}
+let oid;
+ipcRenderer.on("oid", (_, id) => oid = id);
 
 window.mouseDown = () => {
+    const setDragging = (dragging) => {
+        document
+            .getElementById("drag-state")
+            .textContent = dragging ? "BEING" : "NOT BEING";
+    }
+
     ipcRenderer.send("dragStart");
     setDragging(true)
     window.onmouseup = () => {
         ipcRenderer.send("dragEnd");
         setDragging(false)
-
-        ipcRenderer.on("color", (_, color) => {
-            const hexColor = color === "red" ? "#f18b8b" : "#8becf1";
-            setBackgroundColor(hexColor);
-        });
     }
+};
+
+ipcRenderer.on("group_icon", (_, status) => {
+    const el = document.getElementById("group");
+    if (status === "Form") {
+        el.style.visibility = "visible";
+        el.textContent = "Form Group";
+    } else {
+        el.style.visibility = "hidden";
+    }
+});
+
+window.toggleGroup = () => {
+    ipcRenderer.send("toggle_group", oid);
 }

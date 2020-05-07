@@ -71,6 +71,105 @@ describe("Groups", () => {
     });
     //////////////// End copy-pasted section ///////////////////////////
     ///////////////////////////////////////////////////////////////////
+    describe("Group Icon", () => {
+        beforeEach(() => {
+            // @TODO add more comments
+            // Add the windows.
+            flamingo.add({
+                type: "Flamingo/Windows",
+                payload: { oid: 1, width: 100, height: 100 }
+            });
+            flamingo.add({
+                type: "Flamingo/Windows",
+                payload: { oid: 2, width: 100, height: 100 }
+            });
+            flamingo.add({
+                type: "Flamingo/Windows",
+                payload: { oid: 3, width: 100, height: 100 }
+            });
+
+            // Initialize the windows
+            flamingo.dispatch({
+                type: "Flamingo/Open_Window",
+                payload: { oid: 4, target: 1 },
+            });
+            flamingo.dispatch({
+                type: "Flamingo/Open_Window",
+                payload: { oid: 5, target: 2 },
+            });
+            flamingo.dispatch({
+                type: "Flamingo/Open_Window",
+                payload: { oid: 6, target: 3 },
+            });
+        });
+
+        it("Should show 'Form' icon when windows are connected but not grouped.", () => {
+            // Move 2 110 pixels right. This cause it to snap left to 1.
+            const results1 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 7, target: 2, magnitude_x: 110, magnitude_y: 0 },
+            });
+            expect(results1).to.include.deep.members([
+                groupIcon(1, "Form"),
+                groupIcon(2, "Form")
+            ]);
+
+            // Move 2 way off in right field
+            const results2 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 8, target: 2, magnitude_x: 900, magnitude_y: 0 },
+            });
+
+            expect(results2).to.include.deep.members([
+                groupIcon(1, "NoIcon"),
+                groupIcon(2, "NoIcon"),
+                groupIcon(3, "NoIcon"),
+            ]);
+
+            // Move 3 to be 110 pixels right of 1.
+            flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 9, target: 3, magnitude_x: 200, magnitude_y: 0 },
+            });
+           
+            // Move 2 to fill in the gap.
+            const results3 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 10, target: 2, magnitude_x: -900, magnitude_y: 0 },
+            });
+
+            expect(results3).to.include.deep.members([
+                groupIcon(1, "Form"),
+                groupIcon(2, "Form"),
+                groupIcon(3, "Form"),
+            ]);
+        });
+
+        it("Should show 'NoIcon' icon when windows not connected.", () => {
+            // Move 2 Directly adjacent to 1
+            const results1 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 0 },
+            });
+
+            expect(results1).to.include.deep.members([
+                groupIcon(1, "Form"),
+                groupIcon(2, "Form"),
+            ]);
+
+            // Move 2 way off in right field
+            const results2 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { oid: 6, target: 2, magnitude_x: 900, magnitude_y: 0 },
+            });
+
+            expect(results2).to.include.deep.members([
+                groupIcon(1, "NoIcon"),
+                groupIcon(2, "NoIcon"),
+            ]);
+        });
+    });
+
     describe("Group Formation", () => {
         it("Toggling grouping on a window should cause any windows connected to that window to form a group.", () => {
             // In this scenario, we're going to line up windows 1, 2 and 3
