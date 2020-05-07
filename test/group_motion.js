@@ -72,7 +72,7 @@ describe("Groups", () => {
     //////////////// End copy-pasted section ///////////////////////////
     ///////////////////////////////////////////////////////////////////
     describe("Group Formation", () => {
-        it("Toggling grouping on a window should cause any windows connected to that window to form a grouconnected to that window to form a group.", () => {
+        it("Toggling grouping on a window should cause any windows connected to that window to form a group.", () => {
             // In this scenario, we're going to line up windows 1, 2 and 3
             // such that they're adjacent to each other. Then we'll toggle
             // grouping on 1, so that 1, 2, and 3 form a group.
