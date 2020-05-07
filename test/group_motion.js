@@ -21,16 +21,6 @@ const finalCoordinate = (windowID, axis, coord, op = 1) => ({
 });
 
 /**
- * Utility function for generating Snapped data
- * which is returned by Flamingo after move actions.
- */
-const snapped = (a, b, op = 1) => ({
-    op,
-    type: "snapped",
-    value: [a, b]
-});
-
-/**
  * Utility function for generating Connected data
  * which is returned by Flamingo after move actions.
  */
@@ -295,7 +285,6 @@ describe("Groups", () => {
                     expect(results).to.include.deep.members([
                         finalCoordinate(1, "X", 100),
                         finalCoordinate(2, "X", 200),
-                        snapped(2, 3)
                     ]);
                 });
 
@@ -310,7 +299,6 @@ describe("Groups", () => {
                     expect(results).to.include.deep.members([
                         finalCoordinate(1, "X", 100),
                         finalCoordinate(2, "X", 200),
-                        snapped(2, 3)
                     ]);
                 });
             });
@@ -344,7 +332,6 @@ describe("Groups", () => {
                         finalCoordinate(1, "Y", -100),
                         finalCoordinate(2, "X", 200),
                         finalCoordinate(2, "Y", -100),
-                        snapped(2, 3)
                     ]);
                 });
                 it("Should move others in the group when snapping transitively", () => {
@@ -360,7 +347,6 @@ describe("Groups", () => {
                         finalCoordinate(1, "Y", -100),
                         finalCoordinate(2, "X", 200),
                         finalCoordinate(2, "Y", -100),
-                        snapped(2, 3)
                     ]);
                 });
             });
@@ -446,7 +432,6 @@ describe("Groups", () => {
                 expect(results).to.include.deep.members([
                     finalCoordinate(2, "Y", 100),
                     finalCoordinate(3, "Y", 100),
-                    snapped(2, 1)
                 ]);
             });
 
@@ -461,7 +446,6 @@ describe("Groups", () => {
                 expect(results).to.include.deep.members([
                     finalCoordinate(2, "Y", 100),
                     finalCoordinate(3, "Y", 100),
-                    snapped(2, 1)
                 ]);
             });
         });

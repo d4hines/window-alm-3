@@ -17,16 +17,6 @@ const finalCoordinate = (windowID, axis, coord, op = 1) => ({
   op,
 });
 
-/**
- * Utility function for generating Snapped data
- * which is returned by Flamingo after move actions.
- */
-const snapped = (a, b, op = 1) => ({
-  op,
-  type: "snapped",
-  value: [a, b]
-});
-
 describe('Window Motion', () => {
   let flamingo;
 
@@ -144,7 +134,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 300),
         finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
       ]);
     });
 
@@ -170,7 +159,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", -100),
         finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
       ]);
     });
 
@@ -201,7 +189,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 290),
         finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
       ]);
     });
     it('Should snap top', () => {
@@ -230,7 +217,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 100),
         finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
       ]);
     });
   });
@@ -287,7 +273,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         // X value shouldn't change.
         finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
       ]);
     });
 
@@ -314,7 +299,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 200),
         finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
       ]);
     });
 
@@ -336,7 +320,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 300),
         finalCoordinate(2, "Y", 200),
-        snapped(2, 1)
       ]);
     });
 
@@ -357,7 +340,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 300),
-        snapped(2, 1)
       ]);
     });
 
@@ -383,7 +365,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 200),
         finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
       ]);
     });
 
@@ -408,7 +389,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
       ]);
     });
 
@@ -429,7 +409,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", -100),
-        snapped(2, 1)
       ]);
     });
 
@@ -451,7 +430,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "Y", 200),
         finalCoordinate(2, "X", -100),
-        snapped(2, 1)
       ]);
     });
   });
@@ -505,7 +483,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
       ]);
     });
 
@@ -528,7 +505,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 100),
-        snapped(2, 1)
       ]);
     });
 
@@ -552,7 +528,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 700),
         finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
       ]);
     });
 
@@ -576,7 +551,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 100),
         finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
       ]);
     });
   });
@@ -626,10 +600,7 @@ describe('Window Motion', () => {
       });
 
       // No change in coordinates, since the window snapped back to its original position
-      // expect(results.find(({ type }) => type === "final_coordinate")).to.be.undefined;
-      expect(results).to.include.deep.members([
-        snapped(2, 1)
-      ]);
+      expect(results.find(({ type }) => type === "final_coordinate")).to.be.undefined;
     });
 
     it('Should snap to the top right corner', () => {
@@ -651,7 +622,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 700),
-        snapped(2, 1)
       ]);
     });
 
@@ -675,7 +645,6 @@ describe('Window Motion', () => {
       expect(results).to.include.deep.members([
         finalCoordinate(2, "X", 700),
         finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
       ]);
     });
 
@@ -698,7 +667,6 @@ describe('Window Motion', () => {
 
       expect(results).to.include.deep.members([
         finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
       ]);
     });
   });
