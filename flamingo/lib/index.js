@@ -1,3 +1,4 @@
+const { EventEmitter } = require("events");
 const { Flamingo: NativeFlamingo } = require('../native');
 
 const parse_new_object = ({ type, payload }) => {
@@ -31,8 +32,9 @@ const parse_result = ({ val, op }) => {
     return { type, value, op };
 }
 
-class Flamingo {
+class Flamingo extends EventEmitter {
     constructor() {
+        super();
         this.nativeFlamingo = new NativeFlamingo();
     }
 
@@ -41,9 +43,15 @@ class Flamingo {
     }
 
     dispatch(action) {
-        return this.nativeFlamingo
+        const results = this.nativeFlamingo
             .dispatch(parse_new_object(action))
             .map(parse_result);
+
+        for (const { type, value, op } of results) {
+            this.emit(type, value, op);
+        }
+
+        return results;
     }
 
     stop() {
