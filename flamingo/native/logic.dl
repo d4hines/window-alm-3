@@ -398,7 +398,6 @@ Not_Snapped(a, b) :-
 Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(b, a, dir),
-    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     not Not_Snapped(a, b).
 
 
