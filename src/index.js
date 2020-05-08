@@ -9,9 +9,6 @@ const WM_MOUSEMOVE = 0x200
 const flamingo = new Flamingo();
 
 const oidToBrowserWindowID = new Map();
-// This is a counter that helps ensure we don't have
-// collisions in our object ids.
-let nextOID = 0;
 
 const createWindow = ({ width, height }) => {
   // Create the browser window.
@@ -28,8 +25,6 @@ const createWindow = ({ width, height }) => {
   // and load the index.html of the app.
   win.loadFile(path.join(__dirname, 'index.html'));
 
-  const windowOID = nextOID++;
-  oidToBrowserWindowID.set(windowOID, [win.id, width, height]);
 
   // We need to tell the window who it is.
   // As a hack to get around the async nature of loading the window,
@@ -39,16 +34,19 @@ const createWindow = ({ width, height }) => {
   }, 1000);
 
   // Add the window to the Flamingo domain.
-  flamingo.add({
+  // Adding an object to Flamingo's domain assigns
+  // and returns a unqiue object id.
+  const windowOID = flamingo.add({
     type: "Flamingo/Windows",
-    payload: { oid: windowOID, width, height }
+    payload: { width, height }
   });
 
+  oidToBrowserWindowID.set(windowOID, [win.id, width, height]);
+
   // Dispatch an Open_Window action to initialize it.
-  const openOID = nextOID++;
   flamingo.dispatch({
     type: "Flamingo/Open_Window",
-    payload: { oid: openOID, target: windowOID }
+    payload: { target: windowOID }
   });
 
   ipcMain.on("dragStart", () => {
@@ -58,11 +56,9 @@ const createWindow = ({ width, height }) => {
       const [xDiff, yDiff] = [newMouseX - oldMouseX, newMouseY - oldMouseY];
       oldMouseX = newMouseX;
       oldMouseY = newMouseY;
-      const moveOID = nextOID++;
       flamingo.dispatch({
         type: "Flamingo/Move",
         payload: {
-          oid: moveOID,
           target: windowOID,
           magnitude_x: xDiff,
           magnitude_y: yDiff,
@@ -74,38 +70,26 @@ const createWindow = ({ width, height }) => {
   ipcMain.on("dragEnd", () => {
     win.unhookWindowMessage(WM_MOUSEMOVE);
   });
-
-  return windowOID;
 };
 
 
 app.on('ready', () => {
-  // Add the monitors to Flamingo's database.
-  for (const { bounds: { x, y, width, height } } of screen.getAllDisplays()) {
-    const monitorOID = nextOID++;
-    flamingo.add({
-      type: "Flamingo/Monitors",
-      payload: { oid: monitorOID, width, height }
-    });
-    // Once added to Flamingo, we have to dispatch an action to initialize
-    // their coordinates. In this future, this will accept width and height
-    // as well, since they can change, but for this demo they're assumed static.
-    flamingo.dispatch({
-      type: "Flamingo/Set_Monitor_Bounds",
-      payload: { oid: nextOID++, monitor: monitorOID, monitor_x: x, monitor_y: y },
-    });
-  }
-
-  // Create two windows to play with
-  createWindow({ width: 400, height: 400 });
-  createWindow({ width: 400, height: 600 });
-  createWindow({ width: 400, height: 400 });
-
+  // Set up listeners for various changes in the Flamingo,
+  // and register corresponding side effects. The ability write
+  // defined fluents and watch for changes obviates the need for
+  // middleware like thunks, sagas, or loops (Flamingo's approach
+  // is quite similar to Redux-Loops, and they share a lineage in
+  // in the FRP architecture.
   flamingo.on("final_coordinate", ([target, axis, coord], op) => {
-    if (op === -1) return;
-    const [browserID, width, height] = oidToBrowserWindowID.get(target);
-    const browserWindow = BrowserWindow.fromId(browserID);
-    browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
+    if (
+      // We can exlcude deletions, which have an op code of -1 (insertions are +1).
+      op === -1
+      // The oidToBrowserWindowID map won't have entries for monitors.
+      || !oidToBrowserWindowID.has(target)
+    ) return;
+      const [browserID, width, height] = oidToBrowserWindowID.get(target);
+      const browserWindow = BrowserWindow.fromId(browserID);
+      browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
   });
 
   flamingo.on("group_icon", ([target, icon], op) => {
@@ -116,10 +100,29 @@ app.on('ready', () => {
   });
 
   ipcMain.on("toggle_group", (_, target) => {
-    const foo = nextOID++;
     flamingo.dispatch({
       type: "Flamingo/Toggle_Grouping",
-      payload: { oid: foo, target }
+      payload: { target }
     });
   });
+
+  // Add the monitors to Flamingo's database.
+  for (const { bounds: { x, y, width, height } } of screen.getAllDisplays()) {
+    const monitorOID = flamingo.add({
+      type: "Flamingo/Monitors",
+      payload: { width, height }
+    });
+    // Once added to Flamingo, we have to dispatch an action to initialize
+    // their coordinates. In this future, this will accept width and height
+    // as well, since they can change, but for this demo they're assumed static.
+    flamingo.dispatch({
+      type: "Flamingo/Set_Monitor_Bounds",
+      payload: { monitor: monitorOID, monitor_x: x, monitor_y: y },
+    });
+  }
+
+  // Create two windows to play with
+  createWindow({ width: 400, height: 400 });
+  createWindow({ width: 400, height: 600 });
+  createWindow({ width: 400, height: 400 });
 });

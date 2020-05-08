@@ -36,15 +36,21 @@ class Flamingo extends EventEmitter {
     constructor() {
         super();
         this.nativeFlamingo = new NativeFlamingo();
+        // Incremented on every call to nativeFlamingo.
+        // Every object in Flamingo's model needs an unique id.
+        this.nextID = 0;
     }
 
     add(object) {
+        const oid = this.nextID++;
+        object.payload.oid = oid;
         this.nativeFlamingo.add(parse_new_object(object));
+        return oid;
     }
 
-    dispatch(action) {
+    dispatch({type, payload}) {
         const results = this.nativeFlamingo
-            .dispatch(parse_new_object(action))
+            .dispatch(parse_new_object({type, payload: {...payload, oid: this.nextID++}}))
             .map(parse_result);
 
         for (const { type, value, op } of results) {

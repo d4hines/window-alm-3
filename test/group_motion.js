@@ -72,34 +72,37 @@ describe("Groups", () => {
     //////////////// End copy-pasted section ///////////////////////////
     ///////////////////////////////////////////////////////////////////
     describe("Group Icon", () => {
+        let win1;
+        let win2;
+        let win3;
         beforeEach(() => {
             // @TODO add more comments
             // Add the windows.
-            flamingo.add({
+            win1 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 1, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
-            flamingo.add({
+            win2 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 2, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
-            flamingo.add({
+            win3 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 3, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
 
             // Initialize the windows
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 4, target: 1 },
+                payload: { target: win1 },
             });
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 5, target: 2 },
+                payload: { target: win2 },
             });
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 6, target: 3 },
+                payload: { target: win3 },
             });
         });
 
@@ -107,41 +110,41 @@ describe("Groups", () => {
             // Move 2 110 pixels right. This cause it to snap left to 1.
             const results1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 7, target: 2, magnitude_x: 110, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 110, magnitude_y: 0 },
             });
             expect(results1).to.include.deep.members([
-                groupIcon(1, "Form"),
-                groupIcon(2, "Form")
+                groupIcon(win1, "Form"),
+                groupIcon(win2, "Form")
             ]);
 
             // Move 2 way off in right field
             const results2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 8, target: 2, magnitude_x: 900, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 900, magnitude_y: 0 },
             });
 
             expect(results2).to.include.deep.members([
-                groupIcon(1, "NoIcon"),
-                groupIcon(2, "NoIcon"),
-                groupIcon(3, "NoIcon"),
+                groupIcon(win1, "NoIcon"),
+                groupIcon(win2, "NoIcon"),
+                groupIcon(win3, "NoIcon"),
             ]);
 
             // Move 3 to be 110 pixels right of 1.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 9, target: 3, magnitude_x: 200, magnitude_y: 0 },
+                payload: { target: win3, magnitude_x: 200, magnitude_y: 0 },
             });
            
             // Move 2 to fill in the gap.
             const results3 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 10, target: 2, magnitude_x: -900, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: -900, magnitude_y: 0 },
             });
 
             expect(results3).to.include.deep.members([
-                groupIcon(1, "Form"),
-                groupIcon(2, "Form"),
-                groupIcon(3, "Form"),
+                groupIcon(win1, "Form"),
+                groupIcon(win2, "Form"),
+                groupIcon(win3, "Form"),
             ]);
         });
 
@@ -149,102 +152,105 @@ describe("Groups", () => {
             // Move 2 Directly adjacent to 1
             const results1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
             });
 
             expect(results1).to.include.deep.members([
-                groupIcon(1, "Form"),
-                groupIcon(2, "Form"),
+                groupIcon(win1, "Form"),
+                groupIcon(win2, "Form"),
             ]);
 
             // Move 2 way off in right field
             const results2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 6, target: 2, magnitude_x: 900, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 900, magnitude_y: 0 },
             });
 
             expect(results2).to.include.deep.members([
-                groupIcon(1, "NoIcon"),
-                groupIcon(2, "NoIcon"),
+                groupIcon(win1, "NoIcon"),
+                groupIcon(win2, "NoIcon"),
             ]);
         });
     });
 
     describe("Group Formation", () => {
+        let win1;
+        let win2;
+        let win3;
         it("Toggling grouping on a window should cause any windows connected to that window to form a group.", () => {
             // In this scenario, we're going to line up windows 1, 2 and 3
             // such that they're adjacent to each other. Then we'll toggle
             // grouping on 1, so that 1, 2, and 3 form a group.
 
             // Add the windows.
-            flamingo.add({
+            win1 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 1, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
-            flamingo.add({
+            win2 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 2, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
-            flamingo.add({
+            win3 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 3, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
 
             // Initialize the windows
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 4, target: 1 },
+                payload: { target: win1 },
             });
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 5, target: 2 },
+                payload: { target: win2 },
             });
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 6, target: 3 },
+                payload: { target: win3 },
             });
 
             // Move 3 way off into right field.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 7, target: 3, magnitude_x: 1000, magnitude_y: 0 },
+                payload: { target: win3, magnitude_x: 1000, magnitude_y: 0 },
             });
-
+            
             // Move 2 to the right of 1.
             const move1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 7, target: 2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
             });
             expect(move1).to.include.deep.members([
-                groupIcon(1, "Form"),
-                groupIcon(2, "Form"),
+                groupIcon(win1, "Form"),
+                groupIcon(win2, "Form"),
             ]);
 
             // Move 3 to the right of 2.
             const move2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 8, target: 3, magnitude_x: -800, magnitude_y: 0 },
+                payload: { target: win3, magnitude_x: -800, magnitude_y: 0 },
             });
             expect(move2).to.include.deep.members([
-                groupIcon(3, "Form"),
+                groupIcon(win3, "Form"),
             ]);
 
             // The previously connected elements should stay connected.
             expect(move2).to.not.include.deep.members([
-                groupIcon(1, "Form", -1),
-                groupIcon(2, "Form", -1),
+                groupIcon(win1, "Form", -1),
+                groupIcon(win2, "Form", -1),
             ]);
 
             // Group them together.
             const group = flamingo.dispatch({
                 type: "Flamingo/Toggle_Grouping",
-                payload: { oid: 9, target: 1 },
+                payload: { target: win1 },
             });
 
             expect(group).to.include.deep.members([
-                groupIcon(1, "Disband", 1),
-                groupIcon(2, "Disband", 1),
-                groupIcon(3, "Disband", 1),
+                groupIcon(win1, "Disband", 1),
+                groupIcon(win2, "Disband", 1),
+                groupIcon(win3, "Disband", 1),
             ]);
         });
     });
@@ -264,97 +270,100 @@ describe("Groups", () => {
             //     +---------+---------+          +---------+---------+
 
             // Add the windows.
-            flamingo.add({
+            let win1 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 1, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
-            flamingo.add({
+            let win2 = flamingo.add({
                 type: "Flamingo/Windows",
-                payload: { oid: 2, width: 100, height: 100 }
+                payload: { width: 100, height: 100 }
             });
 
             // Initialize the windows
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 3, target: 1 },
+                payload: { target: win1 },
             });
             flamingo.dispatch({
                 type: "Flamingo/Open_Window",
-                payload: { oid: 4, target: 2 },
+                payload: { target: win2 },
             });
 
             // Move 2 to the right of 1.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
             });
 
             // Group them together.
             flamingo.dispatch({
                 type: "Flamingo/Toggle_Grouping",
-                payload: { oid: 6, target: 2 },
+                payload: { target: win2 },
             });
 
             // Move window 1 10 pixels to the right.
             const results = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { oid: 7, target: 1, magnitude_x: 10, magnitude_y: 0 },
+                payload: { target: win1, magnitude_x: 10, magnitude_y: 0 },
             });
 
             expect(results).to.include.deep.members([
-                finalCoordinate(1, "X", 10),
-                finalCoordinate(2, "X", 110)
+                finalCoordinate(win1, "X", 10),
+                finalCoordinate(win2, "X", 110)
             ]);
         });
 
         describe("Snapping to windows", () => {
+            let win1;
+            let win2;
+            let win3;
             beforeEach(() => {
                 // We're going to be working with three windows, called 1, 2, and 3.
                 // Respectively, they have coords (0,0), (100, 0), and (300, -100).
                 // 1 and 2 have width and height of 100, while 3 has width and height of 300.
-                flamingo.add({
+                win1 = flamingo.add({
                     type: "Flamingo/Windows",
-                    payload: { oid: 1, width: 100, height: 100 }
+                    payload: { width: 100, height: 100 }
                 });
-                flamingo.add({
+                win2 = flamingo.add({
                     type: "Flamingo/Windows",
-                    payload: { oid: 2, width: 100, height: 100 }
+                    payload: { width: 100, height: 100 }
                 });
-                flamingo.add({
+                win3 = flamingo.add({
                     type: "Flamingo/Windows",
-                    payload: { oid: 3, width: 300, height: 300 }
+                    payload: { width: 300, height: 300 }
                 });
 
                 // Initialize the windows
                 flamingo.dispatch({
                     type: "Flamingo/Open_Window",
-                    payload: { oid: 4, target: 1 },
+                    payload: { target: win1 },
                 });
                 flamingo.dispatch({
                     type: "Flamingo/Open_Window",
-                    payload: { oid: 5, target: 2 },
+                    payload: { target: win2 },
                 });
                 flamingo.dispatch({
                     type: "Flamingo/Open_Window",
-                    payload: { oid: 6, target: 3 },
+                    payload: { target: win3 },
                 });
 
                 // Move windows to starting positions
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { oid: 7, target: 2, magnitude_x: 100, magnitude_y: 0 },
+                    payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
                 });
 
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { oid: 8, target: 3, magnitude_x: 300, magnitude_y: -100 },
+                    payload: { target: win3, magnitude_x: 300, magnitude_y: -100 },
                 });
 
                 // Group 1 and 2 together.
                 flamingo.dispatch({
                     type: "Flamingo/Toggle_Grouping",
                     // You could target either 1 or 2 here.
-                    payload: { oid: 6, target: 2 },
+                    payload: { target: win2 },
                 });
             });
 
@@ -379,11 +388,11 @@ describe("Groups", () => {
                     // 1 along with it.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { oid: 8, target: 2, magnitude_x: 90, magnitude_y: 0 },
+                        payload: { target: win2, magnitude_x: 90, magnitude_y: 0 },
                     });
                     expect(results).to.include.deep.members([
-                        finalCoordinate(1, "X", 100),
-                        finalCoordinate(2, "X", 200),
+                        finalCoordinate(win1, "X", 100),
+                        finalCoordinate(win2, "X", 200),
                     ]);
                 });
 
@@ -392,12 +401,12 @@ describe("Groups", () => {
                     // 1, and it should have the same effect.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { oid: 8, target: 1, magnitude_x: 90, magnitude_y: 0 },
+                        payload: { target: win1, magnitude_x: 90, magnitude_y: 0 },
                     });
 
                     expect(results).to.include.deep.members([
-                        finalCoordinate(1, "X", 100),
-                        finalCoordinate(2, "X", 200),
+                        finalCoordinate(win1, "X", 100),
+                        finalCoordinate(win2, "X", 200),
                     ]);
                 });
             });
@@ -423,14 +432,14 @@ describe("Groups", () => {
                     // 1 along with it.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { oid: 8, target: 2, magnitude_x: 90, magnitude_y: -90 },
+                        payload: { target: win2, magnitude_x: 90, magnitude_y: -90 },
                     });
 
                     expect(results).to.include.deep.members([
-                        finalCoordinate(1, "X", 100),
-                        finalCoordinate(1, "Y", -100),
-                        finalCoordinate(2, "X", 200),
-                        finalCoordinate(2, "Y", -100),
+                        finalCoordinate(win1, "X", 100),
+                        finalCoordinate(win1, "Y", -100),
+                        finalCoordinate(win2, "X", 200),
+                        finalCoordinate(win2, "Y", -100),
                     ]);
                 });
                 it("Should move others in the group when snapping transitively", () => {
@@ -438,68 +447,72 @@ describe("Groups", () => {
                     // 1, and it should have the same effect.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { oid: 8, target: 1, magnitude_x: 90, magnitude_y: -90 },
+                        payload: { target: win1, magnitude_x: 90, magnitude_y: -90 },
                     });
 
                     expect(results).to.include.deep.members([
-                        finalCoordinate(1, "X", 100),
-                        finalCoordinate(1, "Y", -100),
-                        finalCoordinate(2, "X", 200),
-                        finalCoordinate(2, "Y", -100),
+                        finalCoordinate(win1, "X", 100),
+                        finalCoordinate(win1, "Y", -100),
+                        finalCoordinate(win2, "X", 200),
+                        finalCoordinate(win2, "Y", -100),
                     ]);
                 });
             });
         });
 
         describe("Snapping to sides of monitors", () => {
+            let monitor;
+            let win2;
+            let win3;
+
             beforeEach(() => {
                 // We're going to be working with a monitor called 1.
                 // It's the primary, so it starts at (0,0), and has a
                 // width and height of 800x600.
 
                 // Add monitor
-                flamingo.add({
+                monitor = flamingo.add({
                     type: "Flamingo/Monitors",
-                    payload: { oid: 1, width: 800, height: 600 }
+                    payload: { width: 800, height: 600 }
                 });
                 // Initialize monitor coords.
                 flamingo.dispatch({
                     type: "Flamingo/Set_Monitor_Bounds",
-                    payload: { oid: 4, monitor: 1, monitor_x: 0, monitor_y: 0 },
+                    payload: { monitor, monitor_x: 0, monitor_y: 0 },
                 });
 
                 // We'll also be working with two windows, called 2 and 3.
                 // Both windows have a width and height of 100. Their coords
                 // are (0,0) and (100, 0), respectively.
-                flamingo.add({
+                win2 = flamingo.add({
                     type: "Flamingo/Windows",
-                    payload: { oid: 2, width: 100, height: 100 }
+                    payload: { width: 100, height: 100 }
                 });
-                flamingo.add({
+                win3 = flamingo.add({
                     type: "Flamingo/Windows",
-                    payload: { oid: 3, width: 100, height: 100 }
+                    payload: { width: 100, height: 100 }
                 });
                 // Initialize the windows
                 flamingo.dispatch({
                     type: "Flamingo/Open_Window",
-                    payload: { oid: 5, target: 2 },
+                    payload: { target: win2 },
                 });
                 flamingo.dispatch({
                     type: "Flamingo/Open_Window",
-                    payload: { oid: 6, target: 3 },
+                    payload: { target: win3 },
                 });
 
                 // Move window 3 to its starting positions
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { oid: 7, target: 3, magnitude_x: 100, magnitude_y: 0 },
+                    payload: { target: win3, magnitude_x: 100, magnitude_y: 0 },
                 });
 
                 // Group 1 and 2 together.
                 flamingo.dispatch({
                     type: "Flamingo/Toggle_Grouping",
                     // You could target either 2 or 3 here.
-                    payload: { oid: 6, target: 2 },
+                    payload: { target: win2 },
                 });
             });
 
@@ -525,12 +538,12 @@ describe("Groups", () => {
                 // 3 along with it.
                 const results = flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { oid: 8, target: 2, magnitude_x: 10, magnitude_y: 100 },
+                    payload: { target: win2, magnitude_x: 10, magnitude_y: 100 },
                 });
 
                 expect(results).to.include.deep.members([
-                    finalCoordinate(2, "Y", 100),
-                    finalCoordinate(3, "Y", 100),
+                    finalCoordinate(win2, "Y", 100),
+                    finalCoordinate(win3, "Y", 100),
                 ]);
             });
 
@@ -539,12 +552,12 @@ describe("Groups", () => {
                 // 3, and it should have the same effect.
                 const results = flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { oid: 8, target: 3, magnitude_x: 10, magnitude_y: 100 },
+                    payload: { target: win3, magnitude_x: 10, magnitude_y: 100 },
                 });
 
                 expect(results).to.include.deep.members([
-                    finalCoordinate(2, "Y", 100),
-                    finalCoordinate(3, "Y", 100),
+                    finalCoordinate(win2, "Y", 100),
+                    finalCoordinate(win3, "Y", 100),
                 ]);
             });
         });
