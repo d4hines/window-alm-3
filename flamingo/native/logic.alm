@@ -2,6 +2,7 @@ module Window_demo
     enums
         Axes :: { X, Y }
         Directions :: { DLeft, DRight, DTop, DBottom }
+        Group_Icons :: { NoIcon, Form, Disband }
     sorts
         Rectangles :: Universe
             attributes
@@ -15,8 +16,10 @@ module Window_demo
         Open_Window :: Window_Action
         Move :: Window_Action
             attributes
-                Magnitude : Axis -> Integers
-        Set_Monitor_Bounds :: Window_Action
+                Magnitude_X : Integers
+                Magnitude_Y : Integers
+        Toggle_Grouping :: Window_Action
+        Set_Monitor_Bounds :: Actions
             attributes
                 Monitor : Monitors,
                 Monitor_X : Integers
@@ -32,23 +35,26 @@ module Window_demo
         basic
             total Coordinate : Rectangles x Axes -> Integers
             Moving : Windows -> Booleans
+            Grouped_With : Windows x Windowx -> Booleans
         defined
             Side : Rectangles x Directions x Integers -> Booleans.
             On_Same_Line : Rectangles x Rectangles x Axes -> Booleans
             Overlaps : Rectangles x Rectangles -> Booleans
             Attracts : Rectangles x Rectangles x Directions -> Booleans
-            output Final_Coordinate : Windows x Axes x Integers -> Booleans
-            Not_Snapped : Windows x Rectangles -> Booleans
-            output Snapped : Windows x Rectangles -> Booleans
-            Not_Snapped_To_Corner : Windows x Rectangles -> Booleans
+            Snapped : Windows x Rectangles -> Booleans
             Snapped_To_Corner : Windows x Rectangles -> Booleans
-            Predistance : Windows x Rectanglest x Integers -> Booleans
-            Not_Distance : Windows x Rectangles x Integers -> Booleans
             Distance : Windows x Rectangles x Integers -> Booleans
-            Not_Closest : Windows x Rectangles -> Booleans
             Closest : Windows x Rectangles -> Booleans
             Nearest_Side : Windows x Rectangles x Directions -> Booleans
             Nearest_Corner : Windows x Rectangles x Directions x Directions -> Booleans
+            In_Snapped_Group : Windows -> Booleans
+            Connected : Windows x Windows -> Booleans
+            Not_In_Singleton_Distance : Windows -> Booleans
+            Group_Icon : Windows x Group_Icon -> Booleans
+            output Final_Coordinate : Windows x Axes x Integers -> Booleans
+            Final_Overlaps : Windows x Windows -> Booleans
+            Final_Side : Windows x Directions x Integers -> Booleans
+            Final_On_Same_Line : Windows x Windows x Axes -> Booleans
     axioms
         Snapping_Threshold = 30
         Corner_Snapping_Threshold = 30.
@@ -100,36 +106,28 @@ module Window_demo
             On_Same_Line(a, b, X),
             On_Same_Line(a, b, Y).
 
-        Predistance(a, b, d) if
+        Distance(a, b, min_d) if
             Instance(a, Windows),
             Instance(b, Windows),
             -Overlaps(a, b),
             On_Same_Line(a, b, axis),
-            Opposite_Axis(axis, axis'),
-            Axis(dir, axis__prime),
-            Side(a, dir) = e1,
-            Side(b, dir') = e2,
-            Opposite(dir) = dir',
-            var d = | e1 - e2 |.
+            Opposite_Axis(axis) = axis',
+            Axis(dir) = axis',
+            Side(a, dir, e1),
+            Side(b, dir', e2),
+            Opposite_Direction(dir, dir'),
+            #ddlog var d = abs(e1 - e2),
+            #ddlog var min_d = Aggregate((a, b), group_min(d)).
 
-        Predistance(a, b, d) if
+        Distance(a, b, min_d) if
             Instance(a, Windows),
             Instance(b, Monitors),
-            Side(a, dir) = e1,
-            Side(b, dir) = e2,
-            var d = | e1 - e2 |.
+            Side(a, dir, e1),
+            Side(b, dir, e2),
+            #ddlog var d = abs(e1 - e2),
+            #ddlog var min_d = Aggregate((a, b), group_min(d)).
 
-        Predistance(a, b, d) if
-            Predistance(b, a, d).
-
-        Not_Distance(a, b, d) if
-            Predistance(a, b, d),
-            Predistance(a, b, d'),
-            d' < d.
-        
-        Distance(a, b, d) if
-            Predistance(a, b, d),
-            -Not_Distance(a, b, d).
+        Distance(a, b, d)  if Distance(b, a, d).
 
         Nearest_Corner(a, b, dir, dir') if
             Nearest_Side(a, b, dir),
@@ -141,162 +139,160 @@ module Window_demo
             Side(a, dir', b1),
             Side(a, dir'', a2),
             Side(b, dir'', b2),
-            | a1 - b1 | < | a2 - b2|.
-        
-        Nearest_Corner(a, b, dir, dir') if
-            Nearest_Corner(a, b, dir', dir).
-        
-        Not_Closest(a, b) if 
-            Distance(a, b, d),
-            distnace(a, c, d'),
-            d' < d.
+            #ddlog abs(a1 - b1) < abs(a2 - b2).
         
         Closest(a, b) if
-            Instance(a, Windows),
-            Instance(b, Rectangles),
-            -Not_Closest(a, b).
+            Distance(a, b, d),
+            #ddlog var min_d = Aggregate((a, b), group_min(d)).
         
-        occurs(action) causes Coordinate(a, X) = 0 if
-            Instance(action, Open_Window),
-            Target(action) = a.
-
-        occurs(action) causes Coordinate(a, Y) = 0 if
-           Instance(Action, Open_Window),
-           Target(action) = a.
-        
-        occurs(action) causes Coordinate(m, X) = x if
-            Instance(action, Set_Monitor_Bounds),
-            Monitor(action) = m,
-            Monitor_X(action) = x.
-
-        occurs(action) causes Coordinate(m, Y) = y if
-            Instance(action, Set_Monitor_Bounds),
-            Monitor(action) = m,
-            Monitor_Y(action) = y.
-        
-        occurs(action) causes Coordinate(window, X, new_coord) if
-            Instance(action, Move),
-            Target(action) = window,
-            Magnitude_X(action) = m,
-            Coordinate(window, X) = coord,
-            new_coord = coord + m.
-
-        occurs(action) causes Coordinate(window, Y) = new_coord if
-            Instance(action, Move),
-            Target(action) = window,
-            Magnitude_Y(action) = m,
-            Coordinate(window, Y) = coord,
-            new_coord = coord + m.   
-
-        occurs(action) causes Moving(window) = true if
-            Instance(action, Move),
-            Target(action) = window.
-
-        occurs(Action) causes Moving(other) = false if
-            Instance(action, Move),
-            Target(action) = window,
-            Instance(other, Windows),
-            other != window.
-
         Not_Snapped(a, b) if
-            Moving(a) = true,
+            Moving(a),
             Attracts(b, a, dir),
             Attracts(c, a, dir'),
+            b != c,
             dir' != dir.
-            
-        Snapped(a, b) if,
-            Moving(a) = true,
-            // This should be "Attracts(b, a, _)", but this works and the other doesn't, and I don't have time to fix.
-            // The reason has to do with the fact that monitors attract on inside edges and not outside like windows
-            Attracts(a, b, dir),
+
+        Snapped(a, b) if
+            Moving(a),
+            Attracts(b, a, dir),
             -Not_Snapped(a, b).
-         
-        Not_Snapped_To_Corner(a, b) if
+
+        Snapped_To_Corner(a, b) if
             Snapped(a, b),
             Nearest_Side(a, b, dir),
-            Axis(dir, ax),
-            Opposite_Axis(ax) = ax'
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
             Nearest_Corner(a, b, dir, dir'),
             Side(a, dir', side_a),
             Side(b, dir', side_b),
-            |side_a - side_b| < Corner_Snapping_Threshold,
+            #ddlog abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
             Opposite_Direction(dir') = opposite_dir,
-            Nearest_Corner(a, b, opposite_dir, _).
+            -Nearest_Corner(a, b, opposite_dir, _).
 
-        Snapped_To_Corner(a, ax', new_coord) if
-            Snapped(a, b),
-            Nearest_Side(a, b, dir),
-            Axis(dir) = ax,
-            Opposite_Axis(ax) = ax'
-            Nearest_Corner(a, b, dir, dir'),
-            Side(a, dir') = side_a,
-            Side(b, dir') = side_b,
-            |side_a - side_b| < Corner_Snapping_Threshold,
-            Opposite_Direction(dir') = opposite_dir,
-            Nearest_Corner(a, b, opposite_dir, _).
-    
         Final_Coordinate(a, ax, new_coord) if
-           Snapped(a, b),
-           Distance(a, b, d),
-           Nearest_Side(a, b, dir),
-           Axis(dir) = ax,
-           Coordinate(a, ax) = coord,
-           Direction_Factor(dir) = f,
-           new_coord = coord + d * f.
-           
-        Final_Coordinate(a, ax', new_coord) if
-           Snapped(a, b),
-           Snapped_To_Corner(a, b),
-           Nearest_Side(a, b, dir),
-           Axis(dir) = ax,
-           Opposite_Axis(ax) = ax'
-           Nearest_Corner(a, b, dir, dir'),
-           Coordinate(a, ax') = coord,
-           Side(a, dir') = side_a,
-           Side(b, dir') = side_b,
-           new_coord = coord + (side_b - side_a).
-
-        Final_Coordinate(a, ax', coord) if
-            Snapped(a, b),
-            -Snapped_To_Corner(a, b),
-            Nearest_Side(a, b, dir),
+            Grouped_With(b, a),
+            Snapped(b, c),
+            Distance(c, b, d),
+            Nearest_Side(b, c, dir),
             Axis(dir) = ax,
-            Opposite_Axis(ax) = ax'
-            Coordinate(a, ax', coord).
+            Coordinate(a, ax) = coord,
+            Direction_Factor(dir, f),
+            #ddlog var new_coord = coord + d * f.
 
-        Final_Coordinate(window, axis, coord) if
-            Coordinate(window, axis) = coord,
-            -Snapped(window, _).
-        
+        Final_Coordinate(a, ax', new_coord) if
+            Grouped_With(b, a),
+            Snapped(b, c),
+            Snapped_To_Corner(b, c),
+            Nearest_Side(b, c, dir),
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            Nearest_Corner(b, c, dir, dir'),
+            Coordinate(a, ax') = coord,
+            Side(b, dir', side_b),
+            Side(c, dir', side_c),
+            #ddlog var new_coord = coord + (side_c - side_b).
+
+         Final_Coordinate(a, ax, coord) if
+            Coordinate(a, ax) = coord,
+            Grouped_With(a, b),
+            Snapped(b, c),
+            -Snapped_To_Corner(b, c),
+            Nearest_Side(b, c, dir),
+            Axis(dir, ax'),
+            Opposite_Axis(ax', ax).
+
+        In_Snapped_Group(a) if
+            Grouped_With(a, b),
+            Snapped(b, _).
+
+        Final_Coordinate(a, axis, coord) if
+            Coordinate(a, axis) = coord,
+           -In_Snapped_Group(a).
+
         Attracts(a, b, dir) if
-            Distance(a, b) = d,
-            d < Snapping_Threshold(),
-            Closest(a, b),
-            Nearest_Side(b, a, dir).
-        
-        Nearest_Side(a, b, dir) if
+            Distance(a, b, d),
+            #ddlog d < static_Snapping_Threshold(),
+            Closest(b, a),
+            Nearest_Side(a, b, dir),
+            -Grouped_With(a, b).
+
+        Connected(a, b) if
             Instance(a, Windows),
             Instance(b, Windows),
-            Side(a, dir, edge_a),
-            Opposite_Direction(dir) = dir',
-            Side(b, dir', edge_b),
-            Distance(a, b) = d,
-            edge_a - edge_a == d,
-            Axis(dir) = ax,
-            Opposite_Axis(ax) = ax',
-            On_Same_Line(a, b, ax').
+            -Final_Overlaps(a, b),
+            Final_On_Same_Line(a, b, axis),
+            Opposite_Axis(axis, axis'),
+            Axis(dir, axis'),
+            Final_Side(a, dir, e1),
+            Final_Side(b, dir', e2),
+            Opposite_Direction(dir, dir'),
+            #ddlog e1 - e2 == 0.
+
+        Final_Side(rectangle, DLeft, value) if
+            Final_Coordinate(rectangle, X, value).
+
+        Final_Side(rectangle, DTop, value) if
+            Final_Coordinate(rectangle, Y, value).
+
+        Final_Side(rectangle, DRight, r_value) if
+            Final_Side(rectangle, DLeft, l_value),
+            Width(rectangle, w),
+            #ddlog var r_value = l_value + w.
+
+        Final_Side(rectangle, DBottom, b_value) if
+            Final_Side(rectangle, DTop, t_value),
+            Height(rectangle, h),
+            #ddlog var b_value = t_value + h.
+
+        Final_On_Same_Line(a, b, axis) if
+            Final_Side(a, dir, a1),
+            Axis(dir, axis),
+            Opposite_Direction(dir, dir'),
+            Final_Side(a, dir', a2),
+            Final_Side(b, dir, b1),
+            Final_Side(b, dir', b2),
+            a != b,
+            a1 < b2,
+            a2 > b1.
+
+        Final_Overlaps(a, b) if
+            Final_On_Same_Line(a, b, X),
+            Final_On_Same_Line(a, b, Y).
+
+        Connected(b, a) if Connected(a, b).
+        Connected(a, c) if
+            Connected(a, b),
+            Connected(b, c).
+
+        Grouped_With(a, a) if Instance(a, Windows).
+
+        Grouped_With(a, b) if
+            Instance(action, Toggle_Grouping),
+            Target(action, a),
+            Connected(a, b).
+
+        Grouped_With(b, a) if
+            Instance(action, Toggle_Grouping),
+            Target(action, a),
+            Connected(a, b).
         
-        Nearest_Side(w, m, dir) if
-            Instance(w, Windows),
-            Instance(m, Monitors),
-            Side(w, dir, edge_w),
-            Side(m, dir, edge_m),
-            Distance(w, m) = d,
-            edge_w - edge_m == d,
-            Axis(dir) = ax,
-            Opposite_Axis(ax) = ax',
-            On_Same_Line(w, m, ax').
-               
-        Nearest_Side(a, b, dir) if
-            Opposite_Direction(dir) = dir',
-            Nearest_Side(b, a, dir').
+        Coordinate(a, ax) = coord if
+            Instance(action, Toggle_Grouping),
+            Target(action, a),
+            Final_Coordinate(a, ax, coord).
+
+        Not_In_Singleton_Group(a) if
+            Grouped_With(a, b),
+            a != b.
+
+        Group_Icon(a, NoIcon) if
+            Instance(a, Windows),
+            -Connected(a, _),
+            -Not_In_Singleton_Group(a).
+
+        Group_Icon(a, Form) if
+            Connected(a, b),
+            -Not_In_Singleton_Group(a).
+
+        Group_Icon(a, Disband) if
+            Not_In_Singleton_Group(a).
