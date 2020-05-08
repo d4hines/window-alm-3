@@ -65,6 +65,8 @@ describe('Window Motion', () => {
 
       // Before you can dispatch actions that target an object,
       // you must add that object to Flamingo's database.
+      // Flamingo returns an object id, a unique integer value
+      // you can use to refer to that object later on.
       // We'll add window 1.
       const win1 = flamingo.add({
         type: "Flamingo/Windows",
