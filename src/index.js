@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
-const { debounce } = require("lodash");
+const { debounce, range } = require("lodash");
 const { Flamingo } = require("../flamingo/lib");
 
 const WM_MOUSEMOVE = 0x200
@@ -29,9 +29,9 @@ const createWindow = ({ width, height }) => {
   // We need to tell the window who it is.
   // As a hack to get around the async nature of loading the window,
   // we just wrap it in a timeout (not production worthy!).
-  setTimeout(() => {
+  setInterval(() => {
     win.webContents.send("oid", windowOID);
-  }, 1000);
+  }, 100);
 
   // Add the window to the Flamingo domain.
   // Adding an object to Flamingo's domain assigns
@@ -64,12 +64,14 @@ const createWindow = ({ width, height }) => {
           magnitude_y: yDiff,
         }
       });
-    }), 32);
+    }), 50);
   });
 
   ipcMain.on("dragEnd", () => {
     win.unhookWindowMessage(WM_MOUSEMOVE);
   });
+
+  return windowOID;
 };
 
 
@@ -87,9 +89,9 @@ app.on('ready', () => {
       // The oidToBrowserWindowID map won't have entries for monitors.
       || !oidToBrowserWindowID.has(target)
     ) return;
-      const [browserID, width, height] = oidToBrowserWindowID.get(target);
-      const browserWindow = BrowserWindow.fromId(browserID);
-      browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
+    const [browserID, width, height] = oidToBrowserWindowID.get(target);
+    const browserWindow = BrowserWindow.fromId(browserID);
+    browserWindow.setBounds({ [axis.toLowerCase()]: coord, width, height });
   });
 
   flamingo.on("group_icon", ([target, icon], op) => {
@@ -121,8 +123,52 @@ app.on('ready', () => {
     });
   }
 
-  // Create two windows to play with
-  createWindow({ width: 400, height: 400 });
-  createWindow({ width: 400, height: 600 });
-  createWindow({ width: 400, height: 400 });
+  //////////////// Performance Tests ///////////////////
+  //////////////////////////////////////////////////////
+  // Cartesian product - copied from https://stackoverflow.com/a/43053803
+  const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
+  const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
+
+  // Test config
+  const TOTAL_WINDOWS = 10;
+  const COLUMNS = 3;
+  const WINDOWS_IN_GROUP = 3;
+  const width = 400;
+  const height = 400;
+  const group_rows = Math.floor(WINDOWS_IN_GROUP / COLUMNS);
+  const remainder_rows = Math.floor((TOTAL_WINDOWS - WINDOWS_IN_GROUP) / COLUMNS);
+
+  // Create a grid, placing each window.
+  const grouped_grid = cartesian(range(COLUMNS), range(group_rows)).concat(
+    range((WINDOWS_IN_GROUP) % COLUMNS).map(x => [x, group_rows])
+  );
+
+
+  for (const [x, y] of grouped_grid) {
+    const windowOID = createWindow({ width, height });
+    flamingo.dispatch({
+      type: "Flamingo/Move",
+      payload: {
+        target: windowOID,
+        magnitude_x: x * 400 + 3000,
+        magnitude_y: y * 400,
+      }
+    });
+  }
+
+  const ungrouped_grid = cartesian(range(COLUMNS), range(remainder_rows)).concat(
+    range((TOTAL_WINDOWS - WINDOWS_IN_GROUP) % COLUMNS).map(x => [x, remainder_rows])
+  );
+
+  for (const [x, y] of ungrouped_grid) {
+    const windowOID = createWindow({ width, height });
+    flamingo.dispatch({
+      type: "Flamingo/Move",
+      payload: {
+        target: windowOID,
+        magnitude_x: x * 400,
+        magnitude_y: y * 400,
+      }
+    });
+  }
 });
