@@ -128,8 +128,6 @@ relation Not_Snapped(_1: OID, _2: OID)
 relation Snapped(_1: OID, _2: OID)
 relation Not_Snapped_To_Corner(_1: OID, _2: OID)
 relation Snapped_To_Corner(_1: OID, _2: OID)
-relation Predistance(_1: OID, _2: OID, _3: s64, _4: Directions)
-relation Not_Distance(_1: OID, _2: OID, _3: s64)
 relation Distance(_1: OID, _2: OID, _3: s64)
 relation Not_Closest(_1: OID, _2: OID)
 relation Closest(_1: OID, _2: OID)
@@ -163,87 +161,58 @@ function static_Snapping_Threshold(): s64 {
     30
 }
 
-Connected(a, b) :-
+
+
+
+/////////////////// Stable //////////////////////////
+Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
     Instance(b, Windows),
-    not Final_Overlaps(a, b),
-    Final_On_Same_Line(a, b, axis),
-    Opposite_Axis(axis, axis__prime),
-    Axis(dir, axis__prime),
-    Final_Side(a, dir, e1),
-    Final_Side(b, dir__prime, e2),
+    Side(a, dir, edge_a),
     Opposite_Direction(dir, dir__prime),
-    e1 - e2 == 0.
+    Side(b, dir__prime, edge_b),
+    Distance(a, b, d),
+    edge_a - edge_b == d,
+    Axis(dir, ax),
+    Opposite_Axis(ax, ax__prime),
+    On_Same_Line(a, b, ax__prime).
 
-Final_Side(rectangle, DLeft, value) :-
-    Final_Coordinate(rectangle, X, value).
+Nearest_Side(w, m, dir) :-
+    Instance(w, Windows),
+    Instance(m, Monitors),
+    Side(w, dir, edge_w),
+    Side(m, dir, edge_m),
+    Distance(w, m, d),
+    abs(edge_w - edge_m) == d,
+    Axis(dir, ax),
+    Opposite_Axis(ax, ax__prime),
+    On_Same_Line(w, m, ax__prime).
 
-Final_Side(rectangle, DTop, value) :-
-    Final_Coordinate(rectangle, Y, value).
-
-Final_Side(rectangle, DRight, r_value) :-
-    Final_Side(rectangle, DLeft, l_value),
-    Width(rectangle, w),
-    var r_value = l_value + w.
-
-Final_Side(rectangle, DBottom, b_value) :-
-    Final_Side(rectangle, DTop, t_value),
-    Height(rectangle, h),
-    var b_value = t_value + h.
-
-Final_On_Same_Line(a, b, axis) :-
-    Final_Side(a, dir, a1),
-    Axis(dir, axis),
-    Opposite_Direction(dir, dir__prime),
-    Final_Side(a, dir__prime, a2),
-    Final_Side(b, dir, b1),
-    Final_Side(b, dir__prime, b2),
-    a != b,
-    a1 < b2,
-    a2 > b1.
-
-Final_Overlaps(a, b) :-
-    Final_On_Same_Line(a, b, X),
-    Final_On_Same_Line(a, b, Y).
-
-Connected(b, a) :- Connected(a, b).
-Connected(a, c) :-
-    Connected(a, b),
-    Connected(b, c).
-
-OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :- Instance(a, Windows).
-
-OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
-    Instance(action, Toggle_Grouping),
-    Target(action, a),
-    Connected(a, b).
-
-OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
-    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
-
-OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
-    Instance(a, Windows).
-
-OutFluent(Param_Coordinate{a,ax}, Value_Coordinate{coord}) :-
-    Instance(action, Toggle_Grouping),
-    Target(action, a),
-    Final_Coordinate(a, ax, coord).
-  
-Not_In_Singleton_Group(a) :-
-    InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
-    a != b.
-
-Group_Icon(a, NoIcon) :-
+Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
-    not Connected(a, _),
-    not Not_In_Singleton_Group(a).
+    Instance(b, Windows),
+    Opposite_Direction(dir, dir__prime),
+    Nearest_Side(b, a, dir__prime).
 
-Group_Icon(a, Form) :-
-    Connected(a, b),
-    not Not_In_Singleton_Group(a).
+Nearest_Side(a, b, dir) :-
+    Instance(b, Windows),
+    Instance(a, Monitors),
+    Nearest_Side(b, a, dir).
 
-Group_Icon(a, Disband) :-
-    Not_In_Singleton_Group(a).
+Nearest_Corner(a, b, dir, dir__prime) :-
+    Nearest_Side(a, b, dir),
+    Axis(dir, ax),
+    Opposite_Axis(ax, ax__prime),
+    Axis(dir__prime, ax__prime),
+    Opposite_Direction(dir__prime, dir__prime__prime),
+    Side(a, dir__prime, a1),
+    Side(b, dir__prime, b1),
+    Side(a, dir__prime__prime, a2),
+    Side(b, dir__prime__prime, b2),
+    abs(a1 - b1)  <  abs(a2 - b2).
+
+Nearest_Corner(a, b, dir, dir__prime) :-
+    Nearest_Corner(a, b, dir__prime, dir).
 
 Opposite_Direction(DLeft, DRight).
 Opposite_Direction(DTop, DBottom).
@@ -293,7 +262,7 @@ Overlaps(a, b) :-
     On_Same_Line(a, b, X),
     On_Same_Line(a, b, Y).
 
-Predistance(a, b, d, dir) :-
+Distance(a, b, min_d) :-
     Instance(a, Windows),
     Instance(b, Windows),
     not Overlaps(a, b),
@@ -303,56 +272,23 @@ Predistance(a, b, d, dir) :-
     Side(a, dir, e1),
     Side(b, dir__prime, e2),
     Opposite_Direction(dir, dir__prime),
-    var d = abs(e1 - e2).
+    var d = abs(e1 - e2),
+    var min_d = Aggregate((a, b), group_min(d)).
 
-Predistance(a, b, d, dir) :-
+Distance(a, b, min_d) :-
     Instance(a, Windows),
     Instance(b, Monitors),
     Side(a, dir, e1),
     Side(b, dir, e2),
-    var d = abs(e1 - e2).
-
-Predistance(a, b, d, x) :-
-    Predistance(b, a, d, x).
-
-Not_Distance(a, b, d) :-
-    Predistance(a, b, d, _),
-    Predistance(a, b, d__prime, _),
-    d__prime < d.
-
-Distance(a, b, d) :-
-    Predistance(a, b, d, _),
-    not Not_Distance(a, b, d).
+    var d = abs(e1 - e2),
+    var min_d = Aggregate((a, b), group_min(d)).
 
 Distance(a, b, d) :- Distance(b, a, d).
 
-Nearest_Corner(a, b, dir, dir__prime) :-
-    Nearest_Side(a, b, dir),
-    Axis(dir, ax),
-    Opposite_Axis(ax, ax__prime),
-    Axis(dir__prime, ax__prime),
-    Opposite_Direction(dir__prime, dir__prime__prime),
-    Side(a, dir__prime, a1),
-    Side(b, dir__prime, b1),
-    Side(a, dir__prime__prime, a2),
-    Side(b, dir__prime__prime, b2),
-    abs(a1 - b1)  <  abs(a2 - b2).
+///////////////////// End Stable //////////////////////
+//////////////////////////////////////////////////////
 
-Nearest_Corner(a, b, dir, dir__prime) :-
-    Nearest_Corner(a, b, dir__prime, dir).
-
-Not_Closest(a, b) :- 
-    Distance(a, b, d),
-    Distance(a, c, d__prime),
-    d__prime < d,
-    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
-    not InFluent(Param_Grouped_With{a, c}, Value_Grouped_With{true}).
-
-Closest(a, b) :-
-    Instance(a, Windows),
-    Instance(b, Rectangles),
-    not Not_Closest(a, b).
-
+///////////////////// Likely Stable ///////////////////
 /////////// Open Window
 OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
@@ -361,7 +297,6 @@ OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
 OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
-///////////////////////////////
 
 /////////// Set Monitor Bounds ///////////////////
 OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
@@ -417,6 +352,51 @@ OutFluent(Param_Moving{other}, Value_Moving{false}) :-
     Target(action, window),
     Instance(other, Windows),
     not InFluent(Param_Grouped_With{window, other}, Value_Grouped_With{true}).
+
+
+
+//////////////////////// End Likely Stable ///////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////// Unstable ////////////////////////////////////
+Not_Closest(a, b) :- 
+    Distance(a, b, d),
+    Distance(a, c, d__prime),
+    d__prime < d,
+    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+    not InFluent(Param_Grouped_With{a, c}, Value_Grouped_With{true}).
+
+Closest(a, b) :-
+    Instance(a, Windows),
+    Instance(b, Rectangles),
+    not Not_Closest(a, b).
 
 Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
@@ -501,36 +481,84 @@ Attracts(a, b, dir) :-
     Nearest_Side(a, b, dir),
     not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}).
 
-Nearest_Side(a, b, dir) :-
+Connected(a, b) :-
     Instance(a, Windows),
     Instance(b, Windows),
-    Side(a, dir, edge_a),
+    not Final_Overlaps(a, b),
+    Final_On_Same_Line(a, b, axis),
+    Opposite_Axis(axis, axis__prime),
+    Axis(dir, axis__prime),
+    Final_Side(a, dir, e1),
+    Final_Side(b, dir__prime, e2),
     Opposite_Direction(dir, dir__prime),
-    Side(b, dir__prime, edge_b),
-    Distance(a, b, d),
-    edge_a - edge_b == d,
-    Axis(dir, ax),
-    Opposite_Axis(ax, ax__prime),
-    On_Same_Line(a, b, ax__prime).
+    e1 - e2 == 0.
 
-Nearest_Side(w, m, dir) :-
-    Instance(w, Windows),
-    Instance(m, Monitors),
-    Side(w, dir, edge_w),
-    Side(m, dir, edge_m),
-    Distance(w, m, d),
-    abs(edge_w - edge_m) == d,
-    Axis(dir, ax),
-    Opposite_Axis(ax, ax__prime),
-    On_Same_Line(w, m, ax__prime).
+Final_Side(rectangle, DLeft, value) :-
+    Final_Coordinate(rectangle, X, value).
 
-Nearest_Side(a, b, dir) :-
+Final_Side(rectangle, DTop, value) :-
+    Final_Coordinate(rectangle, Y, value).
+
+Final_Side(rectangle, DRight, r_value) :-
+    Final_Side(rectangle, DLeft, l_value),
+    Width(rectangle, w),
+    var r_value = l_value + w.
+
+Final_Side(rectangle, DBottom, b_value) :-
+    Final_Side(rectangle, DTop, t_value),
+    Height(rectangle, h),
+    var b_value = t_value + h.
+
+Final_On_Same_Line(a, b, axis) :-
+    Final_Side(a, dir, a1),
+    Axis(dir, axis),
+    Opposite_Direction(dir, dir__prime),
+    Final_Side(a, dir__prime, a2),
+    Final_Side(b, dir, b1),
+    Final_Side(b, dir__prime, b2),
+    a != b,
+    a1 < b2,
+    a2 > b1.
+
+Final_Overlaps(a, b) :-
+    Final_On_Same_Line(a, b, X),
+    Final_On_Same_Line(a, b, Y).
+
+Connected(b, a) :- Connected(a, b).
+Connected(a, c) :-
+    Connected(a, b),
+    Connected(b, c).
+
+OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :- Instance(a, Windows).
+
+OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
+    Instance(action, Toggle_Grouping),
+    Target(action, a),
+    Connected(a, b).
+
+OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
+    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
+
+OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
+    Instance(a, Windows).
+
+OutFluent(Param_Coordinate{a,ax}, Value_Coordinate{coord}) :-
+    Instance(action, Toggle_Grouping),
+    Target(action, a),
+    Final_Coordinate(a, ax, coord).
+  
+Not_In_Singleton_Group(a) :-
+    InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
+    a != b.
+
+Group_Icon(a, NoIcon) :-
     Instance(a, Windows),
-    Instance(b, Windows),
-    Opposite_Direction(dir, dir__prime),
-    Nearest_Side(b, a, dir__prime).
+    not Connected(a, _),
+    not Not_In_Singleton_Group(a).
 
-Nearest_Side(a, b, dir) :-
-    Instance(b, Windows),
-    Instance(a, Monitors),
-    Nearest_Side(b, a, dir).
+Group_Icon(a, Form) :-
+    Connected(a, b),
+    not Not_In_Singleton_Group(a).
+
+Group_Icon(a, Disband) :-
+    Not_In_Singleton_Group(a).
