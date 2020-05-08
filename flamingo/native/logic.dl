@@ -101,6 +101,7 @@ Link(Move, Window_Action).
 Link(Rectangles, Universe).
 Link(Monitors, Rectangles).
 Link(Windows, Rectangles).
+Link(Toggle_Grouping, Window_Action).
 
 // Statics
 relation Opposite_Direction(_1: Directions, ret: Directions)
