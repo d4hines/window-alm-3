@@ -160,10 +160,39 @@ function static_Snapping_Threshold(): s64 {
     30
 }
 
+Opposite_Direction(DLeft, DRight).
+Opposite_Direction(DTop, DBottom).
+Opposite_Direction(a, b) :-
+    Opposite_Direction(b, a).
+Opposite_Axis(X, Y).
+Opposite_Axis(Y, X).
+Axis(DLeft, X).
+Axis(DTop, Y).
+Axis(dir, a) :-
+    Axis(dir__prime, a),
+    Opposite_Direction(dir, dir__prime).
+    
+Direction_Factor(DRight, 1).
+Direction_Factor(DBottom, 1).
+Direction_Factor(DLeft, -1).
+Direction_Factor(DTop, -1).
 
+Side(rectangle, DLeft, value) :-
+    InFluent(Param_Coordinate{rectangle, X}, Value_Coordinate{value}).
 
+Side(rectangle, DTop, value) :-
+    InFluent(Param_Coordinate{rectangle, Y}, Value_Coordinate{value}).
 
-/////////////////// Stable //////////////////////////
+Side(rectangle, DRight, r_value) :-
+    Side(rectangle, DLeft, l_value),
+    Width(rectangle, w),
+    var r_value = l_value + w.
+
+Side(rectangle, DBottom, b_value) :-
+    Side(rectangle, DTop, t_value),
+    Height(rectangle, h),
+    var b_value = t_value + h.
+
 Nearest_Side(a, b, dir) :-
     Instance(a, Windows),
     Instance(b, Windows),
@@ -212,39 +241,6 @@ Nearest_Corner(a, b, dir, dir__prime) :-
 
 Nearest_Corner(a, b, dir, dir__prime) :-
     Nearest_Corner(a, b, dir__prime, dir).
-
-Opposite_Direction(DLeft, DRight).
-Opposite_Direction(DTop, DBottom).
-Opposite_Direction(a, b) :-
-    Opposite_Direction(b, a).
-Opposite_Axis(X, Y).
-Opposite_Axis(Y, X).
-Axis(DLeft, X).
-Axis(DTop, Y).
-Axis(dir, a) :-
-    Axis(dir__prime, a),
-    Opposite_Direction(dir, dir__prime).
-
-Direction_Factor(DRight, 1).
-Direction_Factor(DBottom, 1).
-Direction_Factor(DLeft, -1).
-Direction_Factor(DTop, -1).
-
-Side(rectangle, DLeft, value) :-
-    InFluent(Param_Coordinate{rectangle, X}, Value_Coordinate{value}).
-
-Side(rectangle, DTop, value) :-
-    InFluent(Param_Coordinate{rectangle, Y}, Value_Coordinate{value}).
-
-Side(rectangle, DRight, r_value) :-
-    Side(rectangle, DLeft, l_value),
-    Width(rectangle, w),
-    var r_value = l_value + w.
-
-Side(rectangle, DBottom, b_value) :-
-    Side(rectangle, DTop, t_value),
-    Height(rectangle, h),
-    var b_value = t_value + h.
 
 On_Same_Line(a, b, axis) :-
     Side(a, dir, a1),
@@ -516,11 +512,10 @@ OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
     Target(action, a),
     Connected(a, b).
 
-OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
-    OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}).
-
-OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
-    Instance(a, Windows).
+OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}) :-
+    Instance(action, Toggle_Grouping),
+    Target(action, a),
+    Connected(a, b).
 
 OutFluent(Param_Coordinate{a,ax}, Value_Coordinate{coord}) :-
     Instance(action, Toggle_Grouping),
