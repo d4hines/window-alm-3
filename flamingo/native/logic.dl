@@ -129,7 +129,6 @@ relation Snapped(_1: OID, _2: OID)
 relation Not_Snapped_To_Corner(_1: OID, _2: OID)
 relation Snapped_To_Corner(_1: OID, _2: OID)
 relation Distance(_1: OID, _2: OID, _3: s64)
-relation Not_Closest(_1: OID, _2: OID)
 relation Closest(_1: OID, _2: OID)
 relation Nearest_Side(_1: OID, _2: OID, _3: Directions)
 relation Nearest_Corner(_1: OID, _2: OID, _3: Directions, _4: Directions)
@@ -386,17 +385,9 @@ OutFluent(Param_Moving{other}, Value_Moving{false}) :-
 
 
 /////////////////////////// Unstable ////////////////////////////////////
-Not_Closest(a, b) :- 
-    Distance(a, b, d),
-    Distance(a, c, d__prime),
-    d__prime < d,
-    not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
-    not InFluent(Param_Grouped_With{a, c}, Value_Grouped_With{true}).
-
 Closest(a, b) :-
-    Instance(a, Windows),
-    Instance(b, Rectangles),
-    not Not_Closest(a, b).
+    Distance(a, b, d),
+    var min_d = Aggregate((a, b), group_min(d)).
 
 Not_Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
