@@ -126,7 +126,6 @@ relation Attracts(_1: OID, _2: OID, _3: Directions)
 relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 relation Not_Snapped(_1: OID, _2: OID)
 relation Snapped(_1: OID, _2: OID)
-relation Not_Snapped_To_Corner(_1: OID, _2: OID)
 relation Snapped_To_Corner(_1: OID, _2: OID)
 relation Distance(_1: OID, _2: OID, _3: s64)
 relation Closest(_1: OID, _2: OID)
@@ -402,17 +401,6 @@ Snapped(a, b) :-
     not InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     not Not_Snapped(a, b).
 
-Not_Snapped_To_Corner(a, b) :-
-   Snapped(a, b),
-   Nearest_Side(a, b, dir),
-   Axis(dir, ax),
-   Opposite_Axis(ax, ax__prime),
-   Nearest_Corner(a, b, dir, dir__prime),
-   Side(a, dir__prime, side_a),
-   Side(b, dir__prime, side_b),
-   abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
-   Opposite_Direction(dir__prime, opposite_dir),
-   Nearest_Corner(a, b, opposite_dir, _).
 
 Snapped_To_Corner(a, b) :-
     Snapped(a, b),
@@ -423,7 +411,8 @@ Snapped_To_Corner(a, b) :-
     Side(a, dir__prime, side_a),
     Side(b, dir__prime, side_b),
     abs(side_a - side_b) < static_Corner_Snapping_Threshold(),
-    not Not_Snapped_To_Corner(a, b).
+    Opposite_Direction(dir__prime, opposite_dir),
+    not Nearest_Corner(a, b, opposite_dir, _).
 
 Final_Coordinate(a, ax, new_coord) :-
     InFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}),
