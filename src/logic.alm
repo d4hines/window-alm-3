@@ -50,7 +50,7 @@ module Window_demo
             In_Snapped_Group : Windows -> Booleans
             Connected : Windows x Windows -> Booleans
             Not_In_Singleton_Distance : Windows -> Booleans
-            Group_Icon : Windows x Group_Icon -> Booleans
+            output Group_Icon : Windows x Group_Icon -> Booleans
             output Final_Coordinate : Windows x Axes x Integers -> Booleans
             Final_Overlaps : Windows x Windows -> Booleans
             Final_Side : Windows x Directions x Integers -> Booleans

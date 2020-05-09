@@ -1,3 +1,0 @@
-[submodule "neon-serde"]
-	path = neon-serde
-	url = https://github.com/miridius/neon-serde.git
