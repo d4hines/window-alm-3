@@ -393,3 +393,12 @@ module Window_demo
 
         Group_Icon(a, Disband) if
             Not_In_Singleton_Group(a).
+
+
+
+        Occurs(action) causes Coordinate(2, X) = 220 if
+            Instance(action, Move),
+            Target(action, 1),
+            Magnitude_X(action, 10),
+            Coordinate(2, X) = 210.
+    
