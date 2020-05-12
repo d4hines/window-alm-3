@@ -103,8 +103,11 @@ Link(Set_Monitor_Bounds, Actions).
 
 // Statics
 relation Opposite_Direction(_1: Directions, ret: Directions)
+
 relation Opposite_Axis(_1: Axes, ret: Axes)
+
 relation Axis(_1: Directions, ret: Axes)
+
 relation Direction_Factor(_1: Directions, ret: s64)
 
 /////// Fluents //////////////////
@@ -113,7 +116,7 @@ typedef FluentParam = Param_Coordinate{coordinate_1: OID, coordinate_2: Axes}
     | Param_Moving{moving_1: OID}
     | Param_Grouped_With{grouped_with_1: OID, grouped_with_2: OID}
 
-typedef FluentValue = Value_Coordinate{coordinate_ret: s64 }
+typedef FluentValue = Value_Coordinate{coordinate_ret: s64}
     | Value_Moving{moving_ret: bool}
     | Value_Grouped_With{grouped_with_ret: bool}
 
@@ -133,7 +136,6 @@ relation In_Snapped_Group(_1: OID)
 relation Connected(_1: OID, _2: OID)
 relation Not_In_Singleton_Group(_1: OID)
 relation Group_Icon(_1: OID, _2: Group_Icons)
-
 relation Final_Coordinate(_1: OID, _2: Axes, _3: s64)
 relation Final_Overlaps(_1: OID, _2: OID)
 relation Final_Side(_1: OID, _2: Directions, _3: s64)
@@ -144,8 +146,9 @@ relation Final_On_Same_Line(_1: OID, _2: OID, _3: Axes)
 typedef Output_Value = Out_Group_Icon{group_icon: Group_Icon}
     | Out_Final_Coordinate{final_coordinate: Final_Coordinate}
 output relation Output(val: Output_Value)
-Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
+
 Output(Out_Group_Icon{group_icon}) :- Group_Icon[group_icon].
+Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
 
 ///////////// Axioms ///////////////
 function static_Snapping_Threshold(): s64 { 30 }
@@ -153,20 +156,30 @@ function static_Snapping_Threshold(): s64 { 30 }
 function static_Corner_Snapping_Threshold(): s64 { 30 }
 
 Opposite_Direction(DLeft, DRight).
+
 Opposite_Direction(DTop, DBottom).
+
 Opposite_Direction(a, b) :-
     Opposite_Direction(b, a).
+
 Opposite_Axis(X, Y).
+
 Opposite_Axis(Y, X).
+
 Axis(DLeft, X).
+
 Axis(DTop, Y).
+
 Axis(dir, a) :-
     Axis(dir__prime, a),
     Opposite_Direction(dir, dir__prime).
-    
+
 Direction_Factor(DRight, 1).
+
 Direction_Factor(DBottom, 1).
+
 Direction_Factor(DLeft, -1).
+
 Direction_Factor(DTop, -1).
 
 Side(rectangle, DLeft, value) :-
@@ -270,9 +283,9 @@ Distance(a, b, min_d) :-
     var d = abs(e1 - e2),
     var min_d = Aggregate((a, b), group_min(d)).
 
-Distance(a, b, d) :- Distance(b, a, d).
+Distance(a, b, d) :-
+    Distance(b, a, d).
 
-/////////// Open Window
 OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
@@ -281,7 +294,6 @@ OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
 
-/////////// Set Monitor Bounds ///////////////////
 OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
     Instance(action, Set_Monitor_Bounds),
     Monitor(action, m),
@@ -306,7 +318,6 @@ OutFluent(Param_Coordinate{target, Y}, Value_Coordinate{new_coord}) :-
     InFluent(Param_Coordinate{target, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
-///////////// This rule is my problem.
 OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Target(action, target),
@@ -314,7 +325,7 @@ OutFluent(Param_Coordinate{window, X}, Value_Coordinate{new_coord}) :-
     Magnitude_X(action, m),
     InFluent(Param_Coordinate{window, X}, Value_Coordinate{coord}),
     var new_coord = coord + m.
-////////////////////////////
+
 OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     Instance(action, Move),
     Target(action, target),
@@ -323,20 +334,16 @@ OutFluent(Param_Coordinate{window, Y}, Value_Coordinate{new_coord}) :-
     InFluent(Param_Coordinate{window, Y}, Value_Coordinate{coord}),
     var new_coord = coord + m.
 
-//////////// Moving makes all in group move
 OutFluent(Param_Moving{window}, Value_Moving{true}) :-
     Instance(action, Move),
     Target(action, target),
     InFluent(Param_Grouped_With{target, window}, Value_Grouped_With{true}).
 
-//////////////// Moving makes all not in group not move
 OutFluent(Param_Moving{other}, Value_Moving{false}) :-
     Instance(action, Move),
     Target(action, window),
     Instance(other, Windows),
     not InFluent(Param_Grouped_With{window, other}, Value_Grouped_With{true}).
-
-
 
 Closest(a, b) :-
     Distance(a, b, d),
