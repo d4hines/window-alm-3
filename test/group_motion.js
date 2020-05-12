@@ -47,6 +47,10 @@ describe("Groups", () => {
         const dispatch = Flamingo.prototype.dispatch;
         flamingo.dispatch = (...args) => {
             const results = dispatch.apply(flamingo, args);
+            console.log("/////////////", args[0].type);
+            for (const {type, value, op} of results) {
+                console.log(type, value, op);
+            }
             // Narrow the results to just the insertions of final_coordinates
             const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
             for (const i of insertions) {
@@ -135,7 +139,7 @@ describe("Groups", () => {
                 type: "Flamingo/Move",
                 payload: { target: win3, magnitude_x: 200, magnitude_y: 0 },
             });
-           
+
             // Move 2 to fill in the gap.
             const results3 = flamingo.dispatch({
                 type: "Flamingo/Move",
@@ -216,7 +220,7 @@ describe("Groups", () => {
                 type: "Flamingo/Move",
                 payload: { target: win3, magnitude_x: 1000, magnitude_y: 0 },
             });
-            
+
             // Move 2 to the right of 1.
             const move1 = flamingo.dispatch({
                 type: "Flamingo/Move",
@@ -257,25 +261,18 @@ describe("Groups", () => {
     });
 
     describe("Group Motion", () => {
-        it("Moving a window should move all other windows in the group", () => {
-            // In this scenario, we have a group formed with windows 1 and 2.
-            // We're going to move window 1 10 pixels to the right, which
-            // will cause window 2 to move the same amount.
-            // Here's the diagram.
-            //     0                              0
-            //     +---------+---------+          +---------+---------+
-            //    0|         |  100    |        10|         |  110    |
-            //     |  1      |   2     |  +--->   |  1      |   2     |
-            //     |         |         |          |         |         |
-            //     |         |         |          |         |         |
-            //     +---------+---------+          +---------+---------+
-
+        it.only("Moving a window should move all other windows in the group", () => {
+            // @TODO Make diagram.
             // Add the windows.
             let win1 = flamingo.add({
                 type: "Flamingo/Windows",
                 payload: { width: 100, height: 100 }
             });
             let win2 = flamingo.add({
+                type: "Flamingo/Windows",
+                payload: { width: 100, height: 100 }
+            });
+            let win3 = flamingo.add({
                 type: "Flamingo/Windows",
                 payload: { width: 100, height: 100 }
             });
@@ -289,28 +286,49 @@ describe("Groups", () => {
                 type: "Flamingo/Open_Window",
                 payload: { target: win2 },
             });
+            flamingo.dispatch({
+                type: "Flamingo/Open_Window",
+                payload: { target: win3 },
+            });
 
             // Move 2 to the right of 1.
             flamingo.dispatch({
                 type: "Flamingo/Move",
                 payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
             });
+            // Move 3 to the right of 2.
+            flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { target: win3, magnitude_x: 200, magnitude_y: 0 },
+            });
+
 
             // Group them together.
             flamingo.dispatch({
                 type: "Flamingo/Toggle_Grouping",
-                payload: { target: win2 },
+                payload: { target: win1 },
             });
 
             // Move window 1 10 pixels to the right.
-            const results = flamingo.dispatch({
+            const results1 = flamingo.dispatch({
                 type: "Flamingo/Move",
                 payload: { target: win1, magnitude_x: 10, magnitude_y: 0 },
             });
-
-            expect(results).to.include.deep.members([
+            expect(results1).to.include.deep.members([
                 finalCoordinate(win1, "X", 10),
-                finalCoordinate(win2, "X", 110)
+                finalCoordinate(win2, "X", 110),
+                finalCoordinate(win3, "X", 210),
+            ]);
+
+            // Move window 2 10 pixels to the right.
+            const results2 = flamingo.dispatch({
+                type: "Flamingo/Move",
+                payload: { target: win2, magnitude_x: 10, magnitude_y: 0 },
+            });
+            expect(results2).to.include.deep.members([
+                finalCoordinate(win1, "X", 20),
+                finalCoordinate(win2, "X", 120),
+                finalCoordinate(win3, "X", 220),
             ]);
         });
 
