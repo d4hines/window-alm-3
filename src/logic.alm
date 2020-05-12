@@ -400,5 +400,6 @@ module Window_demo
             Instance(action, Move),
             Target(action, 1),
             Magnitude_X(action, 10),
+            Grouped_With(0, 2),
             Coordinate(2, X) = 210.
     
