@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { Flamingo } = require("../flamingo/lib");
+const { Flamingo } = require("flamingo-runtime");
 
 //////////////////////////////////////////////////////
 // This first section is copy-pasted from ./snapping.js

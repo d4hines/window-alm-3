@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { debounce, range } = require("lodash");
-const { Flamingo } = require("../flamingo/lib");
+const { Flamingo } = require("flamingo-runtime");
 
 const WM_MOUSEMOVE = 0x200
 

@@ -1,5 +1,0 @@
-OutFluent:
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = X{}}, .ret = Value_Coordinate{.coordinate_ret = 310}}: +1
-OutFluent{.params = Param_Coordinate{.coordinate_1 = 2, .coordinate_2 = Y{}}, .ret = Value_Coordinate{.coordinate_ret = 10}}: +1
-OutFluent{.params = Param_Moving{.moving_1 = 1}, .ret = Value_Moving{.moving_ret = false}}: +1
-OutFluent{.params = Param_Moving{.moving_1 = 2}, .ret = Value_Moving{.moving_ret = true}}: +1
