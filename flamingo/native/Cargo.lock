@@ -385,7 +385,9 @@ dependencies = [
 
 [[package]]
 name = "neon-serde"
-version = "0.3.0"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f134307714cdd478581fd3cc990202ead78744d676d8437bdff64260395eb8e"
 dependencies = [
  "error-chain",
  "neon",
