@@ -1,5 +1,4 @@
-/////////// Static part of Lib ////////////////
-///////////////////////////////////////////////
+/////////// Static part of lib
 // Built-in functions
 function abs(n: s64): s64 {
    if (n > 0) {
@@ -31,8 +30,7 @@ primary key (x) x.params
 
 output relation OutFluent(params: FluentParam, ret: FluentValue)
 
-//////////// Dynamic Part of Lib ///////////////////
-////////////////////////////////////////////////////
+//////////// Dynamic Part of Lib
 
 // Sort Literals
 typedef Axes = X | Y
@@ -48,18 +46,18 @@ typedef Node = Universe
     | Window_Action
     | Open_Window
     | Move
-    | Set_Monitor_Bounds
     | Toggle_Grouping
+    | Set_Monitor_Bounds
 
 #[rust="serde(untagged)"]
 typedef AttributeValue = Attr_Width{width: s64}
-    | Attr_Height{height: s64} 
+    | Attr_Height{height: s64}
     | Attr_Target{target: OID}
     | Attr_Magnitude_X{magnitude_x: s64}
     | Attr_Magnitude_Y{magnitude_y: s64}
+    | Attr_Monitor{monitor: OID}
     | Attr_Monitor_X{monitor_x: s64}
     | Attr_Monitor_Y{monitor_y: s64}
-    | Attr_Monitor{monitor: OID}
 
 relation Width(oid: OID, value: s64)
 Width(oid, x) :- Object(oid, _, attributes),
@@ -81,6 +79,10 @@ relation Magnitude_Y(oid: OID, value: s64)
 Magnitude_Y(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Magnitude_Y{var x}} = map_get(attributes, "magnitude_y").
 
+relation Monitor(oid: OID, value: OID)
+Monitor(oid, x) :- Object(oid, _, attributes),
+    Some{Attr_Monitor{var x}} = map_get(attributes, "monitor").
+
 relation Monitor_X(oid: OID, value: s64)
 Monitor_X(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Monitor_X{var x}} = map_get(attributes, "monitor_x").
@@ -89,19 +91,15 @@ relation Monitor_Y(oid: OID, value: s64)
 Monitor_Y(oid, x) :- Object(oid, _, attributes),
     Some{Attr_Monitor_Y{var x}} = map_get(attributes, "monitor_y").
 
-relation Monitor(oid: OID, value: OID)
-Monitor(oid, x) :- Object(oid, _, attributes),
-    Some{Attr_Monitor{var x}} = map_get(attributes, "monitor").
-
 // Encode Hiearchy facts
-Link(Window_Action, Actions).
-Link(Set_Monitor_Bounds, Actions).
-Link(Open_Window, Window_Action).
-Link(Move, Window_Action).
 Link(Rectangles, Universe).
 Link(Monitors, Rectangles).
 Link(Windows, Rectangles).
+Link(Window_Action, Actions).
+Link(Open_Window, Window_Action).
+Link(Move, Window_Action).
 Link(Toggle_Grouping, Window_Action).
+Link(Set_Monitor_Bounds, Actions).
 
 // Statics
 relation Opposite_Direction(_1: Directions, ret: Directions)
@@ -143,22 +141,16 @@ relation Final_On_Same_Line(_1: OID, _2: OID, _3: Axes)
 
 // Bundle of all the output fluents
 #[rust="serde(untagged)"]
-typedef Output_Value = Out_Final_Coordinate{final_coordinate: Final_Coordinate}
-    | Out_Snapped{snapped: Snapped}
-    | Out_Group_Icon{group_icon: Group_Icon}
-
+typedef Output_Value = Out_Group_Icon{group_icon: Group_Icon}
+    | Out_Final_Coordinate{final_coordinate: Final_Coordinate}
 output relation Output(val: Output_Value)
 Output(Out_Final_Coordinate{final_coordinate}) :- Final_Coordinate[final_coordinate].
-Output(Out_Snapped{snapped}) :- Snapped[snapped].
 Output(Out_Group_Icon{group_icon}) :- Group_Icon[group_icon].
 
 ///////////// Axioms ///////////////
-function static_Corner_Snapping_Threshold(): s64 {
-    30
-}
-function static_Snapping_Threshold(): s64 {
-    30
-}
+function static_Snapping_Threshold(): s64 { 30 }
+
+function static_Corner_Snapping_Threshold(): s64 { 30 }
 
 Opposite_Direction(DLeft, DRight).
 Opposite_Direction(DTop, DBottom).
@@ -280,10 +272,6 @@ Distance(a, b, min_d) :-
 
 Distance(a, b, d) :- Distance(b, a, d).
 
-///////////////////// End Stable //////////////////////
-//////////////////////////////////////////////////////
-
-///////////////////// Likely Stable ///////////////////
 /////////// Open Window
 OutFluent(Param_Coordinate{a, X}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
@@ -350,37 +338,6 @@ OutFluent(Param_Moving{other}, Value_Moving{false}) :-
 
 
 
-//////////////////////// End Likely Stable ///////////////////////////
-//////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/////////////////////////// Unstable ////////////////////////////////////
 Closest(a, b) :-
     Distance(a, b, d),
     var min_d = Aggregate((a, b), group_min(d)).
@@ -396,7 +353,6 @@ Snapped(a, b) :-
     InFluent(Param_Moving{a}, Value_Moving{true}),
     Attracts(b, a, dir),
     not Not_Snapped(a, b).
-
 
 Snapped_To_Corner(a, b) :-
     Snapped(a, b),
@@ -433,7 +389,7 @@ Final_Coordinate(a, ax__prime, new_coord) :-
     Side(c, dir__prime, side_c),
     var new_coord = coord + (side_c - side_b).
 
- Final_Coordinate(a, ax, coord) :-
+Final_Coordinate(a, ax, coord) :-
     InFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}),
     InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     Snapped(b, c),
@@ -447,8 +403,8 @@ In_Snapped_Group(a) :-
     Snapped(b, _).
 
 Final_Coordinate(a, axis, coord) :-
-   InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
-   not In_Snapped_Group(a).
+    InFluent(Param_Coordinate{a, axis}, Value_Coordinate{coord}),
+    not In_Snapped_Group(a).
 
 Attracts(a, b, dir) :-
     Distance(a, b, d),
@@ -500,12 +456,15 @@ Final_Overlaps(a, b) :-
     Final_On_Same_Line(a, b, X),
     Final_On_Same_Line(a, b, Y).
 
-Connected(b, a) :- Connected(a, b).
+Connected(b, a) :-
+    Connected(a, b).
+
 Connected(a, c) :-
     Connected(a, b),
     Connected(b, c).
 
-OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :- Instance(a, Windows).
+OutFluent(Param_Grouped_With{a, a}, Value_Grouped_With{true}) :-
+    Instance(a, Windows).
 
 OutFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}) :-
     Instance(action, Toggle_Grouping),
@@ -517,11 +476,11 @@ OutFluent(Param_Grouped_With{b, a}, Value_Grouped_With{true}) :-
     Target(action, a),
     Connected(a, b).
 
-OutFluent(Param_Coordinate{a,ax}, Value_Coordinate{coord}) :-
+OutFluent(Param_Coordinate{a, ax}, Value_Coordinate{coord}) :-
     Instance(action, Toggle_Grouping),
     Target(action, a),
     Final_Coordinate(a, ax, coord).
-  
+
 Not_In_Singleton_Group(a) :-
     InFluent(Param_Grouped_With{a, b}, Value_Grouped_With{true}),
     a != b.
@@ -537,3 +496,4 @@ Group_Icon(a, Form) :-
 
 Group_Icon(a, Disband) :-
     Not_In_Singleton_Group(a).
+

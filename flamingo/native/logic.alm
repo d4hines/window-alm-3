@@ -80,7 +80,7 @@ module Window_demo
         Side(rectangle, DLeft, value) if
             Coordinate(rectangle, X) = value.
         Side(rectangle, DTop, value) if
-            Coordinate(rectangle, X) = value.
+            Coordinate(rectangle, Y) = value.
 
         Side(rectangle, DRight, r_value) if
             Side(rectangle, DLeft, l_value),
