@@ -397,12 +397,3 @@ module Window_demo
         Occurs(action) causes Grouped_With(1, 2) if
             Instance(action, Toggle_Grouping),
             Target(action, 0).
-
-        Occurs(action) causes Coordinate(2, X) = 220 if
-            Instance(action, Move),
-            Target(action, 1),
-            Magnitude_X(action, 10),
-            Grouped_With(0, 2),
-            Grouped_With(1, 2),
-            Coordinate(2, X) = 210.
-    
