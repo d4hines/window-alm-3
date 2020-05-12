@@ -1,9 +1,0 @@
-echo // Initial State;
-start;
-echo // Window 1 at (0,0), width 300, height 300;
-insert Object(1, Windows);
-insert Attribute(1, Attr_Width{300});
-insert Attribute(1, Attr_Height{700});
-insert_or_update InFluent(Param_Coordinate{1, X}, Value_Coordinate{0});
-insert_or_update InFluent(Param_Coordinate{1, Y}, Value_Coordinate{0});
-commit dump_changes;

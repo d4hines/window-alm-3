@@ -5,17 +5,11 @@
   "description": "My Electron application description",
   "main": "src/index.js",
   "scripts": {
-    "install": "wsl ./fetch_ddlog.sh",
-    "pretest": "cd flamingo && neon build",
+    "pretest": "bash ./build_alm.sh && cd node_modules/flamingo-runtime && neon build",
     "test": "mocha",
     "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "build:ddlog": "cd flamingo/native && wsl ../../ddlog/bin/ddlog -i ./logic.dl -L ../../ddlog/lib",
-    "build": "yarn build:ddlog && cd flamingo && electron-build-env neon build --release",
-    "clean": "cd flamingo && neon clean",
-    "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
+    "build": "wsl ./build_alm.sh && cd node_modules/flamingo-runtime && electron-build-env neon build --release",
+    "clean": "cd node_modules/flamingo-runtime && neon clean"
   },
   "keywords": [],
   "author": {
@@ -52,6 +46,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
+    "flamingo-runtime": "^0.1.0",
     "lodash": "^4.17.15"
   },
   "devDependencies": {

@@ -13,3 +13,7 @@ body {
   background-color: grey;
   user-select: none;
 }
+
+#group{
+  visibility: visible;
+}

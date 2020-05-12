@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { Flamingo } = require("../flamingo/lib");
+const { Flamingo } = require("flamingo-runtime");
 
 /**
  * Utility function for generating Final_Coordinate data
@@ -17,16 +17,6 @@ const finalCoordinate = (windowID, axis, coord, op = 1) => ({
   op,
 });
 
-/**
- * Utility function for generating Snapped data
- * which is returned by Flamingo after move actions.
- */
-const snapped = (a, b, op = 1) => ({
-  op,
-  type: "snapped",
-  value: [a, b]
-});
-
 describe('Window Motion', () => {
   let flamingo;
 
@@ -42,22 +32,24 @@ describe('Window Motion', () => {
     // but for now it needs the extra help.
     const dispatch = Flamingo.prototype.dispatch;
     flamingo.dispatch = (...args) => {
-            const results = dispatch.apply(flamingo, args);
-            // Narrow the results to just the insertions of final_coordinates
-            const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
-            for (const i of insertions) {
-                i.value.pop();
-                const { value: [id, axis] } = i;
-                // For each final_coordinate, look for others with the same window and axis.
-                const others = insertions
-                    .filter(({ value: [otherID, otherAxis] }) => otherID === id && otherAxis === axis);
-                // If we find more than 1, there's a problem.
-                if (others.length > 1) {
-                    console.error(`Found multiple coordinates for window ${id} on axis ${axis}`)
-                }
-            }
-            return results;
+      const results = dispatch.apply(flamingo, args);
+      // Narrow the results to just the insertions of final_coordinates
+      const insertions = results.filter(({ type, op }) => type === "final_coordinate" && op === 1);
+      for (const i of insertions) {
+        const { value: [id, axis, coord] } = i;
+        // For each final_coordinate, look for others with the same window and axis.
+        const others = insertions
+          .filter(({ value: [otherID, otherAxis, otherCoord] }) =>
+            otherID === id
+            && otherAxis === axis
+            && coord !== otherCoord);
+        // If we find more than 1, there's a problem.
+        if (others.length > 1) {
+          throw new Error(`Found multiple coordinates for window ${id} on axis ${axis}`);
         }
+      }
+      return results;
+    }
   });
 
   afterEach(() => {
@@ -73,51 +65,55 @@ describe('Window Motion', () => {
 
       // Before you can dispatch actions that target an object,
       // you must add that object to Flamingo's database.
+      // Flamingo returns an object id, a unique integer value
+      // you can use to refer to that object later on.
       // We'll add window 1.
-      flamingo.add({
+      const win1 = flamingo.add({
         type: "Flamingo/Windows",
         // Every object (including every action) must have
         // a unique object id (oid).
-        payload: { oid: 1, width: 300, height: 300 }
+        payload: { width: 300, height: 300 }
       });
 
       // Dispatching an action synchronously returns the new
       // state that results from that action occuring.
       const results = flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 2, target: 1 },
+        payload: { target: win1 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(1, "X", 0),
-        finalCoordinate(1, "Y", 0)
+        finalCoordinate(win1, "X", 0),
+        finalCoordinate(win1, "Y", 0)
       ]);
     });
   });
 
   describe('Window snapping', () => {
     // We're going to be working with two windows, 1 and 2
+    let win1;
+    let win2;
     beforeEach(() => {
       // Add window 1 to the domain, with width and height 300
-      flamingo.add({
+      win1 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 1, width: 300, height: 300 }
+        payload: { width: 300, height: 300 }
       });
 
       // Add window 2 to the domain, with width and height 100
-      flamingo.add({
+      win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
 
       // Open both windows, which initializes their coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 3, target: 1 },
+        payload: { target: win1 },
       });
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
     });
 
@@ -135,14 +131,13 @@ describe('Window Motion', () => {
       //   +-----------+                 +-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 310, magnitude_y: 100 },
+        payload: { target: win2, magnitude_x: 310, magnitude_y: 100 },
       });
 
       // We ignore the deletions by using .include instead of .have
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 300),
-        finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 300),
+        finalCoordinate(win2, "Y", 100),
       ]);
     });
 
@@ -162,13 +157,12 @@ describe('Window Motion', () => {
       //
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: -110, magnitude_y: 100 },
+        payload: { target: win2, magnitude_x: -110, magnitude_y: 100 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", -100),
-        finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", -100),
+        finalCoordinate(win2, "Y", 100),
       ]);
     });
 
@@ -193,13 +187,12 @@ describe('Window Motion', () => {
 
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 290, magnitude_y: -110 },
+        payload: { target: win2, magnitude_x: 290, magnitude_y: -110 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 290),
-        finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 290),
+        finalCoordinate(win2, "Y", -100),
       ]);
     });
     it('Should snap top', () => {
@@ -222,41 +215,42 @@ describe('Window Motion', () => {
       //     +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 319 },
+        payload: { target: win2, magnitude_x: 100, magnitude_y: 319 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 100),
-        finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 100),
+        finalCoordinate(win2, "Y", 300),
       ]);
     });
   });
 
   describe('Window corner snapping', () => {
     // We'll work with the same two windows to test corner snapping
+    let win1;
+    let win2;
     beforeEach(() => {
       // Add window 1 to the domain, with width and height 300
-      flamingo.add({
+      win1 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 1, width: 300, height: 300 }
+        payload: { width: 300, height: 300 }
       });
 
       // Add window 2 to the domain, with width and height 100
-      flamingo.add({
+      win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
 
       // Open both windows, which initializes their coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 3, target: 1 },
+        payload: { target: win1 },
       });
 
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
     });
 
@@ -279,13 +273,12 @@ describe('Window Motion', () => {
       //    +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 319 },
+        payload: { target: win2, magnitude_x: 10, magnitude_y: 319 },
       });
 
       expect(results).to.include.deep.members([
         // X value shouldn't change.
-        finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
+        finalCoordinate(win2, "Y", 300),
       ]);
     });
 
@@ -306,13 +299,12 @@ describe('Window Motion', () => {
       //           +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 190, magnitude_y: 319 },
+        payload: { target: win2, magnitude_x: 190, magnitude_y: 319 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 200),
-        finalCoordinate(2, "Y", 300),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 200),
+        finalCoordinate(win2, "Y", 300),
       ]);
     });
 
@@ -328,13 +320,12 @@ describe('Window Motion', () => {
       //  +-----------+               +-----------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 319, magnitude_y: 190 },
+        payload: { target: win2, magnitude_x: 319, magnitude_y: 190 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 300),
-        finalCoordinate(2, "Y", 200),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 300),
+        finalCoordinate(win2, "Y", 200),
       ]);
     });
 
@@ -350,12 +341,11 @@ describe('Window Motion', () => {
       //  +-----------+                +-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 319, magnitude_y: 10 },
+        payload: { target: win2, magnitude_x: 319, magnitude_y: 10 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 300),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 300),
       ]);
     });
 
@@ -375,13 +365,12 @@ describe('Window Motion', () => {
       //  +--------------+           +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 190, magnitude_y: -110 },
+        payload: { target: win2, magnitude_x: 190, magnitude_y: -110 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 200),
-        finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 200),
+        finalCoordinate(win2, "Y", -100),
       ]);
     });
 
@@ -401,12 +390,11 @@ describe('Window Motion', () => {
       //  +--------------+           +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 1, magnitude_y: -110 },
+        payload: { target: win2, magnitude_x: 1, magnitude_y: -110 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "Y", -100),
-        snapped(2, 1)
+        finalCoordinate(win2, "Y", -100),
       ]);
     });
 
@@ -422,12 +410,11 @@ describe('Window Motion', () => {
       //         +--------------+              +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: -101, magnitude_y: 10 },
+        payload: { target: win2, magnitude_x: -101, magnitude_y: 10 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", -100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", -100),
       ]);
     });
 
@@ -443,42 +430,43 @@ describe('Window Motion', () => {
       //         +--------------+          +--------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: -101, magnitude_y: 190 },
+        payload: { target: win2, magnitude_x: -101, magnitude_y: 190 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "Y", 200),
-        finalCoordinate(2, "X", -100),
-        snapped(2, 1)
+        finalCoordinate(win2, "Y", 200),
+        finalCoordinate(win2, "X", -100),
       ]);
     });
   });
 
   describe("Snapping to the sides of Monitors", () => {
+    let monitor;
+    let win2;
     beforeEach(() => {
       // Monitors are added in the same way as windows.
       // We'll work with a single monitor, with width 800 and height 600.
-      flamingo.add({
+      monitor = flamingo.add({
         type: "Flamingo/Monitors",
-        payload: { oid: 1, width: 800, height: 600 }
+        payload: { width: 800, height: 600 }
       });
       // We'll use a single window with width and height 100 for each test.
-      flamingo.add({
+      win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
 
       // Initialize the monitor with X and Y (since it's the primary,
       // we'll set to (0,0)).
       flamingo.dispatch({
         type: "Flamingo/Set_Monitor_Bounds",
-        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+        payload: { monitor, monitor_x: 0, monitor_y: 0 },
       });
 
       // Open the window, which initializes its coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
     });
 
@@ -498,12 +486,11 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 100 },
+        payload: { target: win2, magnitude_x: 10, magnitude_y: 100 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
+        finalCoordinate(win2, "Y", 100),
       ]);
     });
 
@@ -521,12 +508,11 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 10 },
+        payload: { target: win2, magnitude_x: 100, magnitude_y: 10 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 100),
       ]);
     });
 
@@ -544,13 +530,12 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 100 },
+        payload: { target: win2, magnitude_x: 690, magnitude_y: 100 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 700),
-        finalCoordinate(2, "Y", 100),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 700),
+        finalCoordinate(win2, "Y", 100),
       ]);
     });
 
@@ -568,41 +553,42 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------+-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 100, magnitude_y: 490 },
+        payload: { target: win2, magnitude_x: 100, magnitude_y: 490 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 100),
-        finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 100),
+        finalCoordinate(win2, "Y", 500),
       ]);
     });
   });
 
   describe('Snapping to the corners of Monitors', () => {
     // We'll do the same setup as the above set of tests.
+    let monitor;
+    let win2;
     beforeEach(() => {
-      flamingo.add({
+      monitor = flamingo.add({
         type: "Flamingo/Monitors",
-        payload: { oid: 1, width: 800, height: 600 }
+        payload: { width: 800, height: 600 }
       });
       // We'll use a single window with width and height 100 for each test.
-      flamingo.add({
+      win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
 
       // Initialize the monitor with X and Y (since it's the primary,
       // we'll set to (0,0)).
       flamingo.dispatch({
         type: "Flamingo/Set_Monitor_Bounds",
-        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+        payload: { monitor, monitor_x: 0, monitor_y: 0 },
       });
 
       // Open the window, which initializes its coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
     });
 
@@ -620,14 +606,11 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 10 },
+        payload: { target: win2, magnitude_x: 10, magnitude_y: 10 },
       });
 
       // No change in coordinates, since the window snapped back to its original position
-      // expect(results.find(({ type }) => type === "final_coordinate")).to.be.undefined;
-      expect(results).to.include.deep.members([
-        snapped(2, 1)
-      ]);
+      expect(results.find(({ type }) => type === "final_coordinate")).to.be.undefined;
     });
 
     it('Should snap to the top right corner', () => {
@@ -644,12 +627,11 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 10 },
+        payload: { target: win2, magnitude_x: 690, magnitude_y: 10 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 700),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 700),
       ]);
     });
 
@@ -667,13 +649,12 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 690, magnitude_y: 490 },
+        payload: { target: win2, magnitude_x: 690, magnitude_y: 490 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 700),
-        finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
+        finalCoordinate(win2, "X", 700),
+        finalCoordinate(win2, "Y", 500),
       ]);
     });
 
@@ -691,12 +672,11 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------+-----------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 10, magnitude_y: 500 },
+        payload: { target: win2, magnitude_x: 10, magnitude_y: 500 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "Y", 500),
-        snapped(2, 1)
+        finalCoordinate(win2, "Y", 500),
       ]);
     });
   });
@@ -713,34 +693,34 @@ describe('Window Motion', () => {
       //         +----------+
 
       // Add window 1
-      flamingo.add({
+      const win1 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 1, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
       // Add window 2
-      flamingo.add({
+      const win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
       // Open both windows, which initializes their coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 1 },
+        payload: { target: win1 },
       });
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
 
       // Move window 2 to (90, 50)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 90, magnitude_y: 50 },
+        payload: { target: win2, magnitude_x: 90, magnitude_y: 50 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 90),
-        finalCoordinate(2, "Y", 50),
+        finalCoordinate(win2, "X", 90),
+        finalCoordinate(win2, "Y", 50),
       ]);
     });
 
@@ -748,38 +728,38 @@ describe('Window Motion', () => {
       // Same scenario as above, but this time 1 is a monitor.
 
       // Add the monitor
-      flamingo.add({
+      let mointor1 = flamingo.add({
         type: "Flamingo/Monitors",
-        payload: { oid: 1, width: 800, height: 600 }
+        payload: { width: 800, height: 600 }
       });
       // Add the window
-      flamingo.add({
+      let win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
 
       // Initialize the monitor with X and Y (since it's the primary,
       // we'll set to (0,0)).
       flamingo.dispatch({
         type: "Flamingo/Set_Monitor_Bounds",
-        payload: { oid: 3, monitor: 1, monitor_x: 0, monitor_y: 0 },
+        payload: { monitor: mointor1, monitor_x: 0, monitor_y: 0 },
       });
 
       // Open the window, which initializes its coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
 
       // Move window 2 to (790, 50)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 790, magnitude_y: 50 },
+        payload: { target: win2, magnitude_x: 790, magnitude_y: 50 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 790),
-        finalCoordinate(2, "Y", 50),
+        finalCoordinate(win2, "X", 790),
+        finalCoordinate(win2, "Y", 50),
       ]);
     });
 
@@ -788,34 +768,34 @@ describe('Window Motion', () => {
       // window 2 really far away and expect it to stay put  
 
       // Add window 1
-      flamingo.add({
+      let win1 =flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 1, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
       // Add window 2
-      flamingo.add({
+      let win2 = flamingo.add({
         type: "Flamingo/Windows",
-        payload: { oid: 2, width: 100, height: 100 }
+        payload: { width: 100, height: 100 }
       });
       // Open both windows, which initializes their coords at (0, 0)
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 1 },
+        payload: { target: win1 },
       });
       flamingo.dispatch({
         type: "Flamingo/Open_Window",
-        payload: { oid: 4, target: 2 },
+        payload: { target: win2 },
       });
 
       // Move window 2 to (1000, 1000)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { oid: 5, target: 2, magnitude_x: 1000, magnitude_y: 1000 },
+        payload: { target: win2, magnitude_x: 1000, magnitude_y: 1000 },
       });
 
       expect(results).to.include.deep.members([
-        finalCoordinate(2, "X", 1000),
-        finalCoordinate(2, "Y", 1000),
+        finalCoordinate(win2, "X", 1000),
+        finalCoordinate(win2, "Y", 1000),
       ]);
     });
   });

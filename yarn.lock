@@ -1281,6 +1281,11 @@ find-up@^4.0.0, find-up@^4.1.0:
     locate-path "^5.0.0"
     path-exists "^4.0.0"
 
+flamingo-runtime@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/flamingo-runtime/-/flamingo-runtime-0.1.0.tgz#4f1defb9b947d733d49e4ad5e2ffc8a5083b3bc5"
+  integrity sha512-mKpS/4gGYDvhet7sih3vnkEnmS33pPPVZO/63KK1wQp9xPl69W3IyoEAXSuX37omyskyRFQKq7rfatV1+MfTSg==
+
 flat@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/flat/-/flat-4.1.0.tgz#090bec8b05e39cba309747f1d588f04dbaf98db2"
