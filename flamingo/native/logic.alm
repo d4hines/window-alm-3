@@ -92,6 +92,55 @@ module Window_demo
             Height(rectangle) = h,
             #ddlog { var b_value = t_value + h }.
 
+        Nearest_Side(a, b, dir) if
+            Instance(a, Windows),
+            Instance(b, Windows),
+            Side(a, dir, edge_a),
+            Opposite_Direction(dir) = dir',
+            Side(b, dir', edge_b),
+            Distance(a, b, d),
+            #ddlog { edge_a - edge_b == d },
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            On_Same_Line(a, b, ax').
+
+        Nearest_Side(w, m, dir) if
+            Instance(w, Windows),
+            Instance(m, Monitors),
+            Side(w, dir, edge_w),
+            Side(m, dir, edge_m),
+            Distance(w, m, d),
+            #ddlog { abs(edge_w - edge_m) == d },
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            On_Same_Line(w, m, ax').
+
+        Nearest_Side(a, b, dir) if
+            Instance(a, Windows),
+            Instance(b, Windows),
+            Opposite_Direction(dir) = dir',
+            Nearest_Side(b, a, dir').
+
+        Nearest_Side(a, b, dir) if
+            Instance(b, Windows),
+            Instance(a, Monitors),
+            Nearest_Side(b, a, dir).
+
+        Nearest_Corner(a, b, dir, dir') if
+            Nearest_Side(a, b, dir),
+            Axis(dir) = ax,
+            Opposite_Axis(ax) = ax',
+            Axis(dir') = ax',
+            Opposite_Direction(dir') = dir'',
+            Side(a, dir', a1),
+            Side(b, dir', b1),
+            Side(a, dir'', a2),
+            Side(b, dir'', b2),
+            #ddlog { abs(a1 - b1)  <  abs(a2 - b2) }.
+
+        Nearest_Corner(a, b, dir, dir') if
+            Nearest_Corner(a, b, dir', dir).
+
         On_Same_Line(a, b, axis) if
             Side(a, dir, a1),
             Axis(dir) = axis,
@@ -130,18 +179,65 @@ module Window_demo
 
         Distance(a, b, d)  if Distance(b, a, d).
 
-        Nearest_Corner(a, b, dir, dir') if
-            Nearest_Side(a, b, dir),
-            Axis(dir) = ax,
-            Opposite_Axis(ax) = ax',
-            Axis(dir') = ax',
-            Opposite_Direction(dir') = dir'',
-            Side(a, dir', a1),
-            Side(a, dir', b1),
-            Side(a, dir'', a2),
-            Side(b, dir'', b2),
-            #ddlog { abs(a1 - b1) < abs(a2 - b2) }.
-        
+        Coordinate(a, X) = 0 if
+            Instance(action, Open_Window),
+            Target(action, a).
+
+        Coordinate(a, Y) = 0 if
+            Instance(action, Open_Window),
+            Target(action, a).
+
+        Coordinate(m, X) = change_me if
+            Instance(action, Set_Monitor_Bounds),
+            Monitor(action, m),
+            Monitor_X(action, change_me).
+
+        Coordinate(m, Y) = y if
+            Instance(action, Set_Monitor_Bounds),
+            Monitor(action, m),
+            Monitor_Y(action, y).
+
+        Coordinate(target, X) = new_coord if
+            Instance(action, Move),
+            Target(action, target),
+            Magnitude_X(action, m),
+            Coordinate(target, X) = coord,
+            #ddlog { var new_coord = coord + m }.
+
+        Coordinate(target, Y) = new_coord if
+            Instance(action, Move),
+            Target(action, target),
+            Magnitude_Y(action, m),
+            Coordinate(target, Y) = coord,
+            #ddlog { var new_coord = coord + m }.
+
+        Coordinate(window, X) = new_coord if
+            Instance(action, Move),
+            Target(action, target),
+            Grouped_With(target, window) = true,
+            Magnitude_X(action, m),
+            Coordinate(window, X) = coord,
+            #ddlog { var new_coord = coord + m }.
+
+        Coordinate(window, Y) = new_coord if
+            Instance(action, Move),
+            Target(action, target),
+            Grouped_With(target, window) = true,
+            Magnitude_Y(action, m),
+            Coordinate(window, Y) = coord,
+            #ddlog { var new_coord = coord + m }.
+
+        Moving(window) = true if
+            Instance(action, Move),
+            Target(action, target),
+            Grouped_With(target, window) = true.
+
+        -Moving(other) if
+            Instance(action, Move),
+            Target(action, window),
+            Instance(other, Windows),
+            -Grouped_With(window, other).
+
         Closest(a, b) if
             Distance(a, b, d),
             #ddlog { var min_d = Aggregate((a, b), group_min(d)) }.

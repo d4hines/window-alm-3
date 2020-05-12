@@ -294,10 +294,10 @@ OutFluent(Param_Coordinate{a, Y}, Value_Coordinate{0}) :-
     Instance(action, Open_Window),
     Target(action, a).
 
-OutFluent(Param_Coordinate{m, X}, Value_Coordinate{x}) :-
+OutFluent(Param_Coordinate{m, X}, Value_Coordinate{change_me}) :-
     Instance(action, Set_Monitor_Bounds),
     Monitor(action, m),
-    Monitor_X(action, x).
+    Monitor_X(action, change_me).
 
 OutFluent(Param_Coordinate{m, Y}, Value_Coordinate{y}) :-
     Instance(action, Set_Monitor_Bounds),
