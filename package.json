@@ -5,7 +5,7 @@
   "description": "My Electron application description",
   "main": "src/index.js",
   "scripts": {
-    "pretest": "wsl ./build_alm.sh && cd node_modules/flamingo-runtime && neon build --release",
+    "pretest": "bash ./build_alm.sh && cd node_modules/flamingo-runtime && neon build",
     "test": "mocha",
     "start": "electron-forge start",
     "build": "wsl ./build_alm.sh && cd node_modules/flamingo-runtime && electron-build-env neon build --release",

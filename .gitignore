@@ -91,3 +91,5 @@ out/
 # DDLog binary
 ddlog.tar.gz
 ddlog/
+
+.last_modified

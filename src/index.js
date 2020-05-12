@@ -124,52 +124,9 @@ app.on('ready', () => {
     });
   }
 
-  //////////////// Performance Tests ///////////////////
-  //////////////////////////////////////////////////////
-  // Cartesian product - copied from https://stackoverflow.com/a/43053803
-  const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
-  const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
-
-  // Test config
-  const TOTAL_WINDOWS = 10;
-  const COLUMNS = 3;
-  const WINDOWS_IN_GROUP = 3;
-  const width = 400;
-  const height = 400;
-  const group_rows = Math.floor(WINDOWS_IN_GROUP / COLUMNS);
-  const remainder_rows = Math.floor((TOTAL_WINDOWS - WINDOWS_IN_GROUP) / COLUMNS);
-
-  // Create a grid, placing each window.
-  const grouped_grid = cartesian(range(COLUMNS), range(group_rows)).concat(
-    range((WINDOWS_IN_GROUP) % COLUMNS).map(x => [x, group_rows])
-  );
-
-
-  for (const [x, y] of grouped_grid) {
-    const windowOID = createWindow({ width, height });
-    flamingo.dispatch({
-      type: "Flamingo/Move",
-      payload: {
-        target: windowOID,
-        magnitude_x: x * 400 + 3000,
-        magnitude_y: y * 400,
-      }
-    });
+  for (let i = 3; i > 0; i--) {
+    createWindow({ width: 400 + i * 50, height: 400 + i * 50 });
   }
-
-  const ungrouped_grid = cartesian(range(COLUMNS), range(remainder_rows)).concat(
-    range((TOTAL_WINDOWS - WINDOWS_IN_GROUP) % COLUMNS).map(x => [x, remainder_rows])
-  );
-
-  for (const [x, y] of ungrouped_grid) {
-    const windowOID = createWindow({ width, height });
-    flamingo.dispatch({
-      type: "Flamingo/Move",
-      payload: {
-        target: windowOID,
-        magnitude_x: x * 400,
-        magnitude_y: y * 400,
-      }
-    });
-  }
+  createWindow({ width: 500, height: 700 });
+  createWindow({ width: 500, height: 700 });
 });
