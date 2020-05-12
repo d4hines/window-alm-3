@@ -187,10 +187,10 @@ module Window_demo
             Instance(action, Open_Window),
             Target(action, a).
 
-        Coordinate(m, X) = change_me if
+        Coordinate(m, X) = x' if
             Instance(action, Set_Monitor_Bounds),
             Monitor(action, m),
-            Monitor_X(action, change_me).
+            Monitor_X(action, x').
 
         Coordinate(m, Y) = y if
             Instance(action, Set_Monitor_Bounds),
