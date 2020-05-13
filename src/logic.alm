@@ -1,4 +1,4 @@
-module Window_dem   o
+module Window_demo
     enums
         Axes :: { X, Y }.
         Directions :: { DLeft, DRight, DTop, DBottom }.
