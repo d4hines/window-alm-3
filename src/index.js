@@ -13,8 +13,12 @@ app.on('ready', () => {
 
   // Setup a few windows to play with.
   createWindow(flamingo, oidToBrowserWindowID, { width: 500, height: 700 });
-  createWindow(flamingo, oidToBrowserWindowID, { width: 500, height: 700 });
-  createWindow(flamingo, oidToBrowserWindowID, { width: 500, height: 500 });
-  createWindow(flamingo, oidToBrowserWindowID, { width: 450, height: 450 });
-  createWindow(flamingo, oidToBrowserWindowID, { width: 400, height: 400 });
+  createWindow(flamingo, oidToBrowserWindowID, { width: 500, height: 600 });
+  for (let i = 0; i < 3; i++) {
+    let win = createWindow(flamingo, oidToBrowserWindowID, { width: 400, height: 400 });
+    flamingo.dispatch({
+      type: "Flamingo/Move",
+      payload: { target: win, magnitude_x: 2800 + i * 400, magnitude_y: 0 }
+    });
+  }
 });

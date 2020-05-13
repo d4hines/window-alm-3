@@ -368,11 +368,6 @@ module Window_demo
             Target(action, a),
             Connected(a, b).
 
-        Occurs(action) causes Grouped_With(b, a) if
-            Instance(action, Toggle_Grouping),
-            Target(action, a),
-            Connected(a, b).
-        
         Coordinate(a, ax) = coord if
             Instance(action, Toggle_Grouping),
             Target(action, a),
