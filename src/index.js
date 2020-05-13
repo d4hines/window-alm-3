@@ -18,7 +18,7 @@ app.on('ready', () => {
     let win = createWindow(flamingo, oidToBrowserWindowID, { width: 400, height: 400 });
     flamingo.dispatch({
       type: "Flamingo/Move",
-      payload: { target: win, magnitude_x: 2800 + i * 400, magnitude_y: 0 }
+      payload: { target: win, delta_x: 2800 + i * 400, delta_y: 0 }
     });
   }
 });

@@ -131,7 +131,7 @@ describe('Window Motion', () => {
       //   +-----------+                 +-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 310, magnitude_y: 100 },
+        payload: { target: win2, delta_x: 310, delta_y: 100 },
       });
 
       // We ignore the deletions by using .include instead of .have
@@ -157,7 +157,7 @@ describe('Window Motion', () => {
       //
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: -110, magnitude_y: 100 },
+        payload: { target: win2, delta_x: -110, delta_y: 100 },
       });
 
       expect(results).to.include.deep.members([
@@ -187,7 +187,7 @@ describe('Window Motion', () => {
 
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 290, magnitude_y: -110 },
+        payload: { target: win2, delta_x: 290, delta_y: -110 },
       });
 
       expect(results).to.include.deep.members([
@@ -215,7 +215,7 @@ describe('Window Motion', () => {
       //     +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 100, magnitude_y: 319 },
+        payload: { target: win2, delta_x: 100, delta_y: 319 },
       });
 
       expect(results).to.include.deep.members([
@@ -273,7 +273,7 @@ describe('Window Motion', () => {
       //    +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 10, magnitude_y: 319 },
+        payload: { target: win2, delta_x: 10, delta_y: 319 },
       });
 
       expect(results).to.include.deep.members([
@@ -299,7 +299,7 @@ describe('Window Motion', () => {
       //           +-----+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 190, magnitude_y: 319 },
+        payload: { target: win2, delta_x: 190, delta_y: 319 },
       });
 
       expect(results).to.include.deep.members([
@@ -320,7 +320,7 @@ describe('Window Motion', () => {
       //  +-----------+               +-----------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 319, magnitude_y: 190 },
+        payload: { target: win2, delta_x: 319, delta_y: 190 },
       });
 
       expect(results).to.include.deep.members([
@@ -341,7 +341,7 @@ describe('Window Motion', () => {
       //  +-----------+                +-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 319, magnitude_y: 10 },
+        payload: { target: win2, delta_x: 319, delta_y: 10 },
       });
 
       expect(results).to.include.deep.members([
@@ -365,7 +365,7 @@ describe('Window Motion', () => {
       //  +--------------+           +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 190, magnitude_y: -110 },
+        payload: { target: win2, delta_x: 190, delta_y: -110 },
       });
 
       expect(results).to.include.deep.members([
@@ -390,7 +390,7 @@ describe('Window Motion', () => {
       //  +--------------+           +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 1, magnitude_y: -110 },
+        payload: { target: win2, delta_x: 1, delta_y: -110 },
       });
 
       expect(results).to.include.deep.members([
@@ -410,7 +410,7 @@ describe('Window Motion', () => {
       //         +--------------+              +--------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: -101, magnitude_y: 10 },
+        payload: { target: win2, delta_x: -101, delta_y: 10 },
       });
 
       expect(results).to.include.deep.members([
@@ -430,7 +430,7 @@ describe('Window Motion', () => {
       //         +--------------+          +--------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: -101, magnitude_y: 190 },
+        payload: { target: win2, delta_x: -101, delta_y: 190 },
       });
 
       expect(results).to.include.deep.members([
@@ -486,7 +486,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 10, magnitude_y: 100 },
+        payload: { target: win2, delta_x: 10, delta_y: 100 },
       });
 
       expect(results).to.include.deep.members([
@@ -508,7 +508,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 100, magnitude_y: 10 },
+        payload: { target: win2, delta_x: 100, delta_y: 10 },
       });
 
       expect(results).to.include.deep.members([
@@ -530,7 +530,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 690, magnitude_y: 100 },
+        payload: { target: win2, delta_x: 690, delta_y: 100 },
       });
 
       expect(results).to.include.deep.members([
@@ -553,7 +553,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------+-----------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 100, magnitude_y: 490 },
+        payload: { target: win2, delta_x: 100, delta_y: 490 },
       });
 
       expect(results).to.include.deep.members([
@@ -606,7 +606,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 10, magnitude_y: 10 },
+        payload: { target: win2, delta_x: 10, delta_y: 10 },
       });
 
       // No change in coordinates, since the window snapped back to its original position
@@ -627,7 +627,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 690, magnitude_y: 10 },
+        payload: { target: win2, delta_x: 690, delta_y: 10 },
       });
 
       expect(results).to.include.deep.members([
@@ -649,7 +649,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------------------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 690, magnitude_y: 490 },
+        payload: { target: win2, delta_x: 690, delta_y: 490 },
       });
 
       expect(results).to.include.deep.members([
@@ -672,7 +672,7 @@ describe('Window Motion', () => {
       //   +-------------------------+        +-------+-----------------+
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 10, magnitude_y: 500 },
+        payload: { target: win2, delta_x: 10, delta_y: 500 },
       });
 
       expect(results).to.include.deep.members([
@@ -715,7 +715,7 @@ describe('Window Motion', () => {
       // Move window 2 to (90, 50)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 90, magnitude_y: 50 },
+        payload: { target: win2, delta_x: 90, delta_y: 50 },
       });
 
       expect(results).to.include.deep.members([
@@ -754,7 +754,7 @@ describe('Window Motion', () => {
       // Move window 2 to (790, 50)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 790, magnitude_y: 50 },
+        payload: { target: win2, delta_x: 790, delta_y: 50 },
       });
 
       expect(results).to.include.deep.members([
@@ -790,7 +790,7 @@ describe('Window Motion', () => {
       // Move window 2 to (1000, 1000)
       const results = flamingo.dispatch({
         type: "Flamingo/Move",
-        payload: { target: win2, magnitude_x: 1000, magnitude_y: 1000 },
+        payload: { target: win2, delta_x: 1000, delta_y: 1000 },
       });
 
       expect(results).to.include.deep.members([

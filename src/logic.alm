@@ -16,8 +16,8 @@ module Window_demo
         Open_Window :: Window_Action.
         Move :: Window_Action
             attributes
-                Magnitude_X : Integers
-                Magnitude_Y : Integers.
+                Delta_X : Integers
+                Delta_Y : Integers.
         Toggle_Grouping :: Window_Action.
         Set_Monitor_Bounds :: Actions
             attributes
@@ -200,14 +200,14 @@ module Window_demo
         Occurs(action) causes Coordinate(target, X) = new_coord if
             Instance(action, Move),
             Target(action, target),
-            Magnitude_X(action, m),
+            Delta_X(action, m),
             Coordinate(target, X) = coord,
             #ddlog { var new_coord = coord + m }.
 
         Occurs(action) causes Coordinate(target, Y) = new_coord if
             Instance(action, Move),
             Target(action, target),
-            Magnitude_Y(action, m),
+            Delta_Y(action, m),
             Coordinate(target, Y) = coord,
             #ddlog { var new_coord = coord + m }.
 
@@ -215,7 +215,7 @@ module Window_demo
             Instance(action, Move),
             Target(action, target),
             Grouped_With(target, window) = true,
-            Magnitude_X(action, m),
+            Delta_X(action, m),
             Coordinate(window, X) = coord,
             #ddlog { var new_coord = coord + m }.
 
@@ -223,7 +223,7 @@ module Window_demo
             Instance(action, Move),
             Target(action, target),
             Grouped_With(target, window) = true,
-            Magnitude_Y(action, m),
+            Delta_Y(action, m),
             Coordinate(window, Y) = coord,
             #ddlog { var new_coord = coord + m }.
 

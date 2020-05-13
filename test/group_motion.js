@@ -111,7 +111,7 @@ describe("Groups", () => {
             // Move 2 110 pixels right. This cause it to snap left to 1.
             const results1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 110, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 110, delta_y: 0 },
             });
             expect(results1).to.include.deep.members([
                 groupIcon(win1, "Form"),
@@ -121,7 +121,7 @@ describe("Groups", () => {
             // Move 2 way off in right field
             const results2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 900, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 900, delta_y: 0 },
             });
 
             expect(results2).to.include.deep.members([
@@ -133,13 +133,13 @@ describe("Groups", () => {
             // Move 3 to be 110 pixels right of 1.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win3, magnitude_x: 200, magnitude_y: 0 },
+                payload: { target: win3, delta_x: 200, delta_y: 0 },
             });
            
             // Move 2 to fill in the gap.
             const results3 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: -900, magnitude_y: 0 },
+                payload: { target: win2, delta_x: -900, delta_y: 0 },
             });
 
             expect(results3).to.include.deep.members([
@@ -153,7 +153,7 @@ describe("Groups", () => {
             // Move 2 Directly adjacent to 1
             const results1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 100, delta_y: 0 },
             });
 
             expect(results1).to.include.deep.members([
@@ -164,7 +164,7 @@ describe("Groups", () => {
             // Move 2 way off in right field
             const results2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 900, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 900, delta_y: 0 },
             });
 
             expect(results2).to.include.deep.members([
@@ -214,13 +214,13 @@ describe("Groups", () => {
             // Move 3 way off into right field.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win3, magnitude_x: 1000, magnitude_y: 0 },
+                payload: { target: win3, delta_x: 1000, delta_y: 0 },
             });
             
             // Move 2 to the right of 1.
             const move1 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 100, delta_y: 0 },
             });
             expect(move1).to.include.deep.members([
                 groupIcon(win1, "Form"),
@@ -230,7 +230,7 @@ describe("Groups", () => {
             // Move 3 to the right of 2.
             const move2 = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win3, magnitude_x: -800, magnitude_y: 0 },
+                payload: { target: win3, delta_x: -800, delta_y: 0 },
             });
             expect(move2).to.include.deep.members([
                 groupIcon(win3, "Form"),
@@ -293,7 +293,7 @@ describe("Groups", () => {
             // Move 2 to the right of 1.
             flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
+                payload: { target: win2, delta_x: 100, delta_y: 0 },
             });
 
             // Group them together.
@@ -305,7 +305,7 @@ describe("Groups", () => {
             // Move window 1 10 pixels to the right.
             const results = flamingo.dispatch({
                 type: "Flamingo/Move",
-                payload: { target: win1, magnitude_x: 10, magnitude_y: 0 },
+                payload: { target: win1, delta_x: 10, delta_y: 0 },
             });
 
             expect(results).to.include.deep.members([
@@ -352,12 +352,12 @@ describe("Groups", () => {
                 // Move windows to starting positions
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { target: win2, magnitude_x: 100, magnitude_y: 0 },
+                    payload: { target: win2, delta_x: 100, delta_y: 0 },
                 });
 
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { target: win3, magnitude_x: 300, magnitude_y: -100 },
+                    payload: { target: win3, delta_x: 300, delta_y: -100 },
                 });
 
                 // Group 1 and 2 together.
@@ -389,7 +389,7 @@ describe("Groups", () => {
                     // 1 along with it.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { target: win2, magnitude_x: 90, magnitude_y: 0 },
+                        payload: { target: win2, delta_x: 90, delta_y: 0 },
                     });
                     expect(results).to.include.deep.members([
                         finalCoordinate(win1, "X", 100),
@@ -402,7 +402,7 @@ describe("Groups", () => {
                     // 1, and it should have the same effect.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { target: win1, magnitude_x: 90, magnitude_y: 0 },
+                        payload: { target: win1, delta_x: 90, delta_y: 0 },
                     });
 
                     expect(results).to.include.deep.members([
@@ -433,7 +433,7 @@ describe("Groups", () => {
                     // 1 along with it.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { target: win2, magnitude_x: 90, magnitude_y: -90 },
+                        payload: { target: win2, delta_x: 90, delta_y: -90 },
                     });
 
                     expect(results).to.include.deep.members([
@@ -448,7 +448,7 @@ describe("Groups", () => {
                     // 1, and it should have the same effect.
                     const results = flamingo.dispatch({
                         type: "Flamingo/Move",
-                        payload: { target: win1, magnitude_x: 90, magnitude_y: -90 },
+                        payload: { target: win1, delta_x: 90, delta_y: -90 },
                     });
 
                     expect(results).to.include.deep.members([
@@ -506,7 +506,7 @@ describe("Groups", () => {
                 // Move window 3 to its starting positions
                 flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { target: win3, magnitude_x: 100, magnitude_y: 0 },
+                    payload: { target: win3, delta_x: 100, delta_y: 0 },
                 });
 
                 // Group 1 and 2 together.
@@ -539,7 +539,7 @@ describe("Groups", () => {
                 // 3 along with it.
                 const results = flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { target: win2, magnitude_x: 10, magnitude_y: 100 },
+                    payload: { target: win2, delta_x: 10, delta_y: 100 },
                 });
 
                 expect(results).to.include.deep.members([
@@ -553,7 +553,7 @@ describe("Groups", () => {
                 // 3, and it should have the same effect.
                 const results = flamingo.dispatch({
                     type: "Flamingo/Move",
-                    payload: { target: win3, magnitude_x: 10, magnitude_y: 100 },
+                    payload: { target: win3, delta_x: 10, delta_y: 100 },
                 });
 
                 expect(results).to.include.deep.members([

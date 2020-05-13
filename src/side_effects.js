@@ -54,8 +54,8 @@ const createWindow = (flamingo, oidToBrowserWindowID, { width, height }) => {
         type: "Flamingo/Move",
         payload: {
           target: windowOID,
-          magnitude_x: xDiff,
-          magnitude_y: yDiff,
+          delta_x: xDiff,
+          delta_y: yDiff,
         }
       });
     }), 50);
