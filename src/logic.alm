@@ -1,4 +1,4 @@
-module Window_demo
+module Window_dem   o
     enums
         Axes :: { X, Y }.
         Directions :: { DLeft, DRight, DTop, DBottom }.
@@ -179,39 +179,39 @@ module Window_demo
 
         Distance(a, b, d)  if Distance(b, a, d).
 
-        Occurs(action) causes Coordinate(a, X) = 0 if
+        occurs(action) causes Coordinate(a, X) = 0 if
             Instance(action, Open_Window),
             Target(action, a).
 
-        Occurs(action) causes Coordinate(a, Y) = 0 if
+        occurs(action) causes Coordinate(a, Y) = 0 if
             Instance(action, Open_Window),
             Target(action, a).
 
-        Occurs(action) causes Coordinate(m, X) = x' if
+        occurs(action) causes Coordinate(m, X) = x' if
             Instance(action, Set_Monitor_Bounds),
             Monitor(action, m),
             Monitor_X(action, x').
 
-        Occurs(action) causes Coordinate(m, Y) = y if
+        occurs(action) causes Coordinate(m, Y) = y if
             Instance(action, Set_Monitor_Bounds),
             Monitor(action, m),
             Monitor_Y(action, y).
 
-        Occurs(action) causes Coordinate(target, X) = new_coord if
+        occurs(action) causes Coordinate(target, X) = new_coord if
             Instance(action, Move),
             Target(action, target),
             Delta_X(action, m),
             Coordinate(target, X) = coord,
             #ddlog { var new_coord = coord + m }.
 
-        Occurs(action) causes Coordinate(target, Y) = new_coord if
+        occurs(action) causes Coordinate(target, Y) = new_coord if
             Instance(action, Move),
             Target(action, target),
             Delta_Y(action, m),
             Coordinate(target, Y) = coord,
             #ddlog { var new_coord = coord + m }.
 
-        Occurs(action) causes Coordinate(window, X) = new_coord if
+        occurs(action) causes Coordinate(window, X) = new_coord if
             Instance(action, Move),
             Target(action, target),
             Grouped_With(target, window) = true,
@@ -219,7 +219,7 @@ module Window_demo
             Coordinate(window, X) = coord,
             #ddlog { var new_coord = coord + m }.
 
-        Occurs(action) causes Coordinate(window, Y) = new_coord if
+        occurs(action) causes Coordinate(window, Y) = new_coord if
             Instance(action, Move),
             Target(action, target),
             Grouped_With(target, window) = true,
@@ -227,12 +227,12 @@ module Window_demo
             Coordinate(window, Y) = coord,
             #ddlog { var new_coord = coord + m }.
 
-        Occurs(action) causes Moving(window) = true if
+        occurs(action) causes Moving(window) = true if
             Instance(action, Move),
             Target(action, target),
             Grouped_With(target, window) = true.
 
-        Occurs(action) causes -Moving(other) if
+        occurs(action) causes -Moving(other) if
             Instance(action, Move),
             Target(action, window),
             Instance(other, Windows),
@@ -363,12 +363,12 @@ module Window_demo
 
         Grouped_With(a, a) if Instance(a, Windows).
 
-        Occurs(action) causes Grouped_With(a, b) if
+        occurs(action) causes Grouped_With(a, b) if
             Instance(action, Toggle_Grouping),
             Target(action, a),
             Connected(a, b).
 
-        Occurs(action) causes Grouped_With(b, a) if
+        occurs(action) causes Grouped_With(b, a) if
             Instance(action, Toggle_Grouping),
             Target(action, a),
             Connected(a, b).
