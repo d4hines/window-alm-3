@@ -95,3 +95,6 @@ ddlog/
 .last_modified
 
 history.txt
+
+src/logic.dl
+logic_ddlog/
