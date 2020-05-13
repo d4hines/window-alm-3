@@ -267,51 +267,42 @@ module Window_demo
             -Nearest_Corner(a, b, opposite_dir, _).
 
         Final_Coordinate(a, ax, new_coord) if
-            Grouped_With(b, a),
-            Snapped(b, c),
-            Distance(c, b, d),
-            Nearest_Side(b, c, dir),
+            Snapped(a, b),
+            Distance(a, b, d),
+            Nearest_Side(a, b, dir),
             Axis(dir) = ax,
             Coordinate(a, ax) = coord,
             Direction_Factor(dir, f),
             #ddlog { var new_coord = coord + d * f }.
 
         Final_Coordinate(a, ax', new_coord) if
-            Grouped_With(b, a),
-            Snapped(b, c),
-            Snapped_To_Corner(b, c),
-            Nearest_Side(b, c, dir),
+            Snapped(a, b),
+            Snapped_To_Corner(a, b),
+            Nearest_Side(a, b, dir),
             Axis(dir) = ax,
             Opposite_Axis(ax) = ax',
-            Nearest_Corner(b, c, dir, dir'),
+            Nearest_Corner(a, b, dir, dir'),
             Coordinate(a, ax') = coord,
+            Side(a, dir', side_a),
             Side(b, dir', side_b),
-            Side(c, dir', side_c),
-            #ddlog { var new_coord = coord + (side_c - side_b) }.
+            #ddlog { var new_coord = coord + (side_a - side_b) }.
 
          Final_Coordinate(a, ax, coord) if
             Coordinate(a, ax) = coord,
-            Grouped_With(a, b),
-            Snapped(b, c),
-            -Snapped_To_Corner(b, c),
-            Nearest_Side(b, c, dir),
+            Snapped(a, b),
+            -Snapped_To_Corner(a, b),
+            Nearest_Side(a, b, dir),
             Axis(dir, ax'),
             Opposite_Axis(ax', ax).
-
-        In_Snapped_Group(a) if
-            Grouped_With(a, b),
-            Snapped(b, _).
-
+        
         Final_Coordinate(a, axis, coord) if
-            Coordinate(a, axis) = coord,
-           -In_Snapped_Group(a).
+            Coordinate(a, axis) = coord.
 
         Attracts(a, b, dir) if
             Distance(a, b, d),
             #ddlog { d < static_Snapping_Threshold() },
             Closest(b, a),
-            Nearest_Side(a, b, dir),
-            -Grouped_With(a, b).
+            Nearest_Side(a, b, dir).
 
         Connected(a, b) if
             Instance(a, Windows),
